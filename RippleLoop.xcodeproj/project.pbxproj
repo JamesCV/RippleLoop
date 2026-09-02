@@ -1,0 +1,427 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* RippleLoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000001 /* RippleLoopApp.swift */; };
+		B10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000002 /* ContentView.swift */; };
+		B10000000000000000000003 /* GameConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000003 /* GameConstants.swift */; };
+		B10000000000000000000004 /* StonePhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000004 /* StonePhysics.swift */; };
+		B10000000000000000000005 /* ParallaxBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000005 /* ParallaxBackground.swift */; };
+		B10000000000000000000006 /* RippleEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000006 /* RippleEffect.swift */; };
+		B10000000000000000000007 /* HUDNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000007 /* HUDNode.swift */; };
+		B10000000000000000000008 /* AimOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000008 /* AimOverlay.swift */; };
+		B10000000000000000000009 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000009 /* GameScene.swift */; };
+		B10000000000000000000010 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000010 /* GameState.swift */; };
+		B10000000000000000000011 /* PlayerProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000011 /* PlayerProgress.swift */; };
+		B10000000000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000012 /* Assets.xcassets */; };
+		B10000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000013 /* PrivacyInfo.xcprivacy */; };
+		B10000000000000000000014 /* StonePhysicsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000014 /* StonePhysicsTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C10000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = P10000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = T10000000000000000000001;
+			remoteInfo = RippleLoop;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F10000000000000000000001 /* RippleLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleLoopApp.swift; sourceTree = "<group>"; };
+		F10000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F10000000000000000000003 /* GameConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConstants.swift; sourceTree = "<group>"; };
+		F10000000000000000000004 /* StonePhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StonePhysics.swift; sourceTree = "<group>"; };
+		F10000000000000000000005 /* ParallaxBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParallaxBackground.swift; sourceTree = "<group>"; };
+		F10000000000000000000006 /* RippleEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleEffect.swift; sourceTree = "<group>"; };
+		F10000000000000000000007 /* HUDNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDNode.swift; sourceTree = "<group>"; };
+		F10000000000000000000008 /* AimOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimOverlay.swift; sourceTree = "<group>"; };
+		F10000000000000000000009 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
+		F10000000000000000000010 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		F10000000000000000000011 /* PlayerProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProgress.swift; sourceTree = "<group>"; };
+		F10000000000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F10000000000000000000013 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F10000000000000000000014 /* StonePhysicsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StonePhysicsTests.swift; sourceTree = "<group>"; };
+		F10000000000000000000015 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F10000000000000000000016 /* RippleLoop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RippleLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F10000000000000000000017 /* RippleLoopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RippleLoopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FRAMEWORKS000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FRAMEWORKS000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		G10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				G10000000000000000000002 /* RippleLoop */,
+				G10000000000000000000003 /* RippleLoopTests */,
+				G10000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		G10000000000000000000002 /* RippleLoop */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000001 /* RippleLoopApp.swift */,
+				F10000000000000000000002 /* ContentView.swift */,
+				G10000000000000000000005 /* Game */,
+				G10000000000000000000006 /* Models */,
+				F10000000000000000000012 /* Assets.xcassets */,
+				F10000000000000000000013 /* PrivacyInfo.xcprivacy */,
+				F10000000000000000000015 /* Info.plist */,
+			);
+			path = RippleLoop;
+			sourceTree = "<group>";
+		};
+		G10000000000000000000003 /* RippleLoopTests */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000014 /* StonePhysicsTests.swift */,
+			);
+			path = RippleLoopTests;
+			sourceTree = "<group>";
+		};
+		G10000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000016 /* RippleLoop.app */,
+				F10000000000000000000017 /* RippleLoopTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		G10000000000000000000005 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000003 /* GameConstants.swift */,
+				F10000000000000000000004 /* StonePhysics.swift */,
+				F10000000000000000000005 /* ParallaxBackground.swift */,
+				F10000000000000000000006 /* RippleEffect.swift */,
+				F10000000000000000000007 /* HUDNode.swift */,
+				F10000000000000000000008 /* AimOverlay.swift */,
+				F10000000000000000000009 /* GameScene.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		G10000000000000000000006 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000010 /* GameState.swift */,
+				F10000000000000000000011 /* PlayerProgress.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T10000000000000000000001 /* RippleLoop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CL10000000000000000000001 /* Build configuration list for PBXNativeTarget "RippleLoop" */;
+			buildPhases = (
+				SOURCES00000000000000000001 /* Sources */,
+				FRAMEWORKS000000000000000001 /* Frameworks */,
+				RESOURCES000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RippleLoop;
+			productName = RippleLoop;
+			productReference = F10000000000000000000016 /* RippleLoop.app */;
+			productType = "com.apple.product-type.application";
+		};
+		T10000000000000000000002 /* RippleLoopTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CL10000000000000000000002 /* Build configuration list for PBXNativeTarget "RippleLoopTests" */;
+			buildPhases = (
+				SOURCES00000000000000000002 /* Sources */,
+				FRAMEWORKS000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D10000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = RippleLoopTests;
+			productName = RippleLoopTests;
+			productReference = F10000000000000000000017 /* RippleLoopTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		P10000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					T10000000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					T10000000000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = T10000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = CL10000000000000000000003 /* Build configuration list for PBXProject "RippleLoop" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = G10000000000000000000001;
+			productRefGroup = G10000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				T10000000000000000000001 /* RippleLoop */,
+				T10000000000000000000002 /* RippleLoopTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RESOURCES000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000012 /* Assets.xcassets in Resources */,
+				B10000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		SOURCES00000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* RippleLoopApp.swift in Sources */,
+				B10000000000000000000002 /* ContentView.swift in Sources */,
+				B10000000000000000000003 /* GameConstants.swift in Sources */,
+				B10000000000000000000004 /* StonePhysics.swift in Sources */,
+				B10000000000000000000005 /* ParallaxBackground.swift in Sources */,
+				B10000000000000000000006 /* RippleEffect.swift in Sources */,
+				B10000000000000000000007 /* HUDNode.swift in Sources */,
+				B10000000000000000000008 /* AimOverlay.swift in Sources */,
+				B10000000000000000000009 /* GameScene.swift in Sources */,
+				B10000000000000000000010 /* GameState.swift in Sources */,
+				B10000000000000000000011 /* PlayerProgress.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		SOURCES00000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000014 /* StonePhysicsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D10000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T10000000000000000000001 /* RippleLoop */;
+			targetProxy = C10000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BC10000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BC10000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BC10000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RippleLoop/Info.plist;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rippleloop.game;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BC10000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RippleLoop/Info.plist;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rippleloop.game;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		BC10000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rippleloop.game.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RippleLoop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RippleLoop";
+			};
+			name = Debug;
+		};
+		BC10000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rippleloop.game.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RippleLoop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RippleLoop";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CL10000000000000000000001 /* Build configuration list for PBXNativeTarget "RippleLoop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC10000000000000000000003 /* Debug */,
+				BC10000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CL10000000000000000000002 /* Build configuration list for PBXNativeTarget "RippleLoopTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC10000000000000000000005 /* Debug */,
+				BC10000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CL10000000000000000000003 /* Build configuration list for PBXProject "RippleLoop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC10000000000000000000001 /* Debug */,
+				BC10000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = P10000000000000000000001 /* Project object */;
+}
