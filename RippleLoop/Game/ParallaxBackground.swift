@@ -16,7 +16,7 @@ extension SKColor {
 }
 
 enum ParallaxBackground {
-    static func build(in scene: SKScene, biome: Biome = .goldenHour) -> SKNode {
+    static func build(in scene: SKScene, biome: Biome = .goldenHour, dockTier: DockTier = .weathered) -> SKNode {
         let root = SKNode()
         root.zPosition = -100
 
@@ -53,6 +53,7 @@ enum ParallaxBackground {
         dock.zPosition = -2
         dock.name = "dock"
         root.addChild(dock)
+        applyDockStyle(tier: dockTier, to: root)
 
         let farLayer = SKNode()
         farLayer.name = "farLayer"
@@ -147,6 +148,35 @@ enum ParallaxBackground {
         shimmer.zPosition = -4
         shimmer.name = "shimmer"
         root.addChild(shimmer)
+    }
+
+    static func applyDockStyle(tier: DockTier, to root: SKNode) {
+        guard let dock = root.childNode(withName: "dock") as? SKShapeNode else { return }
+        dock.fillColor = SKColor.hex(tier.plankHex)
+        dock.strokeColor = SKColor.hex(tier.strokeHex, alpha: 0.6)
+
+        root.childNode(withName: "dockLanterns")?.removeFromParent()
+        guard tier.rawValue >= DockTier.lantern.rawValue else { return }
+
+        let lanterns = SKNode()
+        lanterns.name = "dockLanterns"
+        lanterns.zPosition = -1
+
+        for index in 0..<3 {
+            let post = SKShapeNode(rectOf: CGSize(width: 4, height: 18), cornerRadius: 1)
+            post.fillColor = SKColor.hex(tier.strokeHex)
+            post.strokeColor = .clear
+            post.position = CGPoint(x: CGFloat(index) * 52 + 24, y: GameConstants.waterSurfaceY + 30)
+            lanterns.addChild(post)
+
+            let glow = SKShapeNode(circleOfRadius: tier == .golden ? 7 : 5)
+            glow.fillColor = SKColor.hex(tier == .golden ? "#FFD878" : "#FFE8A8", alpha: 0.85)
+            glow.strokeColor = .clear
+            glow.position = CGPoint(x: post.position.x, y: post.position.y + 12)
+            lanterns.addChild(glow)
+        }
+
+        root.addChild(lanterns)
     }
 
     private static func makeRock(width: CGFloat, height: CGFloat, biome: Biome) -> SKNode {

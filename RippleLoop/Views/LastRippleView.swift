@@ -4,7 +4,7 @@ struct LastRippleView: View {
     let state: ContinueState
     let onAction: (ContinueAction) -> Void
 
-    @State private var countdown = 5
+    @State private var countdown = PlayerProgress.shared.lastRippleCountdownSeconds
     @State private var timer: Timer?
 
     var body: some View {
@@ -67,7 +67,7 @@ struct LastRippleView: View {
     }
 
     private func startTimer() {
-        countdown = 5
+        countdown = PlayerProgress.shared.lastRippleCountdownSeconds
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
                 countdown -= 1

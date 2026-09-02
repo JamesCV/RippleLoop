@@ -21,6 +21,7 @@ final class PlayerProgress {
         static let equippedStone = "ripplerun.equippedStone"
         static let outfitPrefix = "ripplerun.outfit."
         static let equippedOutfit = "ripplerun.equippedOutfit"
+        static let dockUpgradePrefix = "ripplerun.dock."
     }
 
     var bestDistanceMeters: Double {
@@ -87,6 +88,39 @@ final class PlayerProgress {
 
     var stoneRunModifiers: StoneRunModifiers {
         equippedStone.runModifiers()
+    }
+
+    var dockRunModifiers: DockRunModifiers {
+        var mods = DockRunModifiers()
+        let rippleLevel = dockLevel(for: .rippleCrate)
+        mods.rippleEarnMultiplier = 1 + Double(rippleLevel) * 0.05
+
+        let launchLevel = dockLevel(for: .launchRail)
+        mods.launchPowerBonus = CGFloat(launchLevel) * 0.015
+
+        let boostLevel = dockLevel(for: .boostKeg)
+        mods.extraBoostCharges = (boostLevel >= 2 ? 1 : 0) + (boostLevel >= 4 ? 1 : 0)
+
+        let benchLevel = dockLevel(for: .restBench)
+        mods.continueSpeedBonus = CGFloat(benchLevel) * 50
+
+        let lanternLevel = dockLevel(for: .lanternRow)
+        mods.lastRippleCountdownBonus = lanternLevel * 2
+
+        let chimeLevel = dockLevel(for: .windChimes)
+        mods.comboWindowBonus = TimeInterval(chimeLevel) * 0.05
+
+        return mods
+    }
+
+    var dockTier: DockTier {
+        let total = DockUpgradeKind.allCases.reduce(0) { $0 + dockLevel(for: $1) }
+        let maxTotal = DockUpgradeKind.allCases.reduce(0) { $0 + $1.maxLevel }
+        return DockTier.from(totalLevels: total, maxLevels: maxTotal)
+    }
+
+    var lastRippleCountdownSeconds: Int {
+        5 + dockRunModifiers.lastRippleCountdownBonus
     }
 
     var equippedItemsForNextRun: [ShopItemKind?] {
@@ -175,6 +209,29 @@ final class PlayerProgress {
 
     func isSkillTreeUnlocked(_ tree: SkillTree) -> Bool {
         bestDistanceMeters >= tree.unlockDistanceMeters
+    }
+
+    func isDockTabUnlocked() -> Bool {
+        bestDistanceMeters >= ShopCategory.dockTabUnlockDistanceMeters
+    }
+
+    func dockLevel(for upgrade: DockUpgradeKind) -> Int {
+        max(0, min(defaults.integer(forKey: Key.dockUpgradePrefix + upgrade.rawValue), upgrade.maxLevel))
+    }
+
+    func setDockLevel(_ level: Int, for upgrade: DockUpgradeKind) {
+        defaults.set(max(0, min(level, upgrade.maxLevel)), forKey: Key.dockUpgradePrefix + upgrade.rawValue)
+    }
+
+    func purchaseDockUpgrade(_ upgrade: DockUpgradeKind) -> Bool {
+        guard isDockTabUnlocked() else { return false }
+        let current = dockLevel(for: upgrade)
+        guard current < upgrade.maxLevel else { return false }
+        let cost = upgrade.cost(forLevel: current)
+        guard ripples >= cost else { return false }
+        ripples -= cost
+        setDockLevel(current + 1, for: upgrade)
+        return true
     }
 
     func level(for upgrade: UpgradeKind) -> Int {
@@ -336,7 +393,7 @@ final class PlayerProgress {
         let pearlBonus = pearlsCollected * max(1, pearlRippleMultiplier) * (2 + max(0, pearlRippleBonus))
         let comboBonus = comboPeak * 5
         let baseEarned = max(10, distanceBonus + skipBonus + pearlBonus + comboBonus)
-        let earned = max(10, Int(Double(baseEarned) * max(1, rippleEarnMultiplier)))
+        let earned = max(10, Int(Double(baseEarned) * max(1, rippleEarnMultiplier) * dockRunModifiers.rippleEarnMultiplier))
         ripples += earned
 
         return RunSummary(

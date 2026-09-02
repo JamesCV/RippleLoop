@@ -30,7 +30,7 @@ struct DockMenuView: View {
                         .offset(y: bobOffset)
 
                     Ellipse()
-                        .fill(Color(hex: "#8B6914"))
+                        .fill(Color(hex: progress.dockTier.plankHex))
                         .frame(width: 200, height: 16)
                         .offset(y: 48)
                 }

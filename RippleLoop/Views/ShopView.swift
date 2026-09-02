@@ -40,6 +40,15 @@ struct ShopView: View {
                             ForEach(PebbleOutfitKind.allCases) { outfit in
                                 outfitRow(outfit)
                             }
+                        case .dock:
+                            dockTierBanner
+                            if progress.isDockTabUnlocked {
+                                ForEach(DockUpgradeKind.allCases) { upgrade in
+                                    dockUpgradeRow(upgrade)
+                                }
+                            } else {
+                                dockLockedBanner
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -465,6 +474,82 @@ struct ShopView: View {
         case .rare: return Color(hex: "#FFD878")
         }
     }
+
+    private var dockTierBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Dock tier")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                    Text(progress.dockTier.title)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#FFD878"))
+                }
+                Spacer()
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(hex: progress.dockTier.plankHex))
+                    .frame(width: 64, height: 12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color(hex: progress.dockTier.strokeHex), lineWidth: 1)
+                    )
+            }
+            Text("Upgrade the dock to improve every run and unlock cozy lantern lights.")
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var dockLockedBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Dock upgrades locked")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+            Text("Reach \(Int(ShopCategory.dockTabUnlockDistanceMeters))m to renovate the dock.")
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func dockUpgradeRow(_ upgrade: DockUpgradeKind) -> some View {
+        let level = progress.dockLevel(for: upgrade)
+        let maxed = level >= upgrade.maxLevel
+        let cost = upgrade.cost(forLevel: level)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(upgrade.title)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(upgrade.description)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+                Spacer()
+                Text(maxed ? "MAX" : "Lv \(level)/\(upgrade.maxLevel)")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#FFD878"))
+            }
+
+            if !maxed {
+                purchaseButton(title: "\(cost) Ripples", enabled: progress.ripples >= cost) {
+                    if PlayerProgress.shared.purchaseDockUpgrade(upgrade) {
+                        progress.refresh()
+                        session.showToast("Dock upgraded: \(upgrade.title)")
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+    }
 }
 
 @MainActor
@@ -475,6 +560,7 @@ final class ShopProgressObserver: ObservableObject {
     @Published var bestDistance = PlayerProgress.shared.bestDistanceMeters
     @Published var equippedStone = PlayerProgress.shared.equippedStone
     @Published var equippedOutfit = PlayerProgress.shared.equippedOutfit
+    @Published var dockTier = PlayerProgress.shared.dockTier
 
     func refresh() {
         ripples = PlayerProgress.shared.ripples
@@ -483,6 +569,7 @@ final class ShopProgressObserver: ObservableObject {
         bestDistance = PlayerProgress.shared.bestDistanceMeters
         equippedStone = PlayerProgress.shared.equippedStone
         equippedOutfit = PlayerProgress.shared.equippedOutfit
+        dockTier = PlayerProgress.shared.dockTier
     }
 
     func level(for upgrade: UpgradeKind) -> Int {
@@ -513,5 +600,13 @@ final class ShopProgressObserver: ObservableObject {
 
     func ownsOutfit(_ outfit: PebbleOutfitKind) -> Bool {
         PlayerProgress.shared.ownsOutfit(outfit)
+    }
+
+    func isDockTabUnlocked() -> Bool {
+        PlayerProgress.shared.isDockTabUnlocked()
+    }
+
+    func dockLevel(for upgrade: DockUpgradeKind) -> Int {
+        PlayerProgress.shared.dockLevel(for: upgrade)
     }
 }

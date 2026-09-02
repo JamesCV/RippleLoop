@@ -46,6 +46,7 @@ final class GameScene: SKScene {
 
     private var runModifiers = RunItemModifiers()
     private var stoneModifiers = StoneRunModifiers()
+    private var dockModifiers = DockRunModifiers()
     private var rippleBoostsRemaining = 0
     private var maxRippleBoosts = 0
     private var lastBoostTime: TimeInterval = 0
@@ -56,7 +57,7 @@ final class GameScene: SKScene {
         backgroundColor = SKColor.hex(GameConstants.skyBottom)
         scaleMode = .resizeFill
 
-        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome)
+        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome, dockTier: PlayerProgress.shared.dockTier)
         addChild(backgroundRoot)
 
         worldNode.position = .zero
@@ -100,6 +101,7 @@ final class GameScene: SKScene {
         PlayerProgress.shared.grantFTUERipplesIfNeeded()
         runModifiers = PlayerProgress.shared.consumeEquippedItemsIfNeeded()
         stoneModifiers = PlayerProgress.shared.stoneRunModifiers
+        dockModifiers = PlayerProgress.shared.dockRunModifiers
         applyEquippedStoneAppearance()
         resetRun()
         startThrowSequence()
@@ -110,7 +112,7 @@ final class GameScene: SKScene {
         sinkStartedAt = nil
         hasOfferedContinue = false
         continuesUsed += 1
-        stoneVelocity = CGVector(dx: max(stoneVelocity.dx, 180), dy: 280)
+        stoneVelocity = CGVector(dx: max(stoneVelocity.dx, 180 + dockModifiers.continueSpeedBonus), dy: 280)
         stonePosition.y = max(stonePosition.y, GameConstants.waterSurfaceY + 40)
         inAirSegment = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
@@ -197,7 +199,7 @@ final class GameScene: SKScene {
         let progress = PlayerProgress.shared
         aimOverlay.configureArcPreview(
             steps: progress.angleArcPreviewSteps,
-            launchPowerBonus: progress.launchPowerBonus + stoneModifiers.launchPowerBonus
+            launchPowerBonus: progress.launchPowerBonus + stoneModifiers.launchPowerBonus + dockModifiers.launchPowerBonus
         )
         hud.setHint("Swipe to aim · Pebble throws")
     }
@@ -210,7 +212,7 @@ final class GameScene: SKScene {
         stoneVelocity = StonePhysics.launchVelocity(
             power: aimOverlay.swipePower,
             angleRadians: aimOverlay.launchAngle,
-            powerBonus: PlayerProgress.shared.launchPowerBonus + stoneModifiers.launchPowerBonus
+            powerBonus: PlayerProgress.shared.launchPowerBonus + stoneModifiers.launchPowerBonus + dockModifiers.launchPowerBonus
         )
         stoneVelocity.dx *= runModifiers.launchSpeedMultiplier
         stoneVelocity.dy *= runModifiers.launchSpeedMultiplier
@@ -486,7 +488,7 @@ final class GameScene: SKScene {
     }
 
     private func registerSkip(at time: TimeInterval) {
-        let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus + stoneModifiers.comboWindowBonus
+        let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus + stoneModifiers.comboWindowBonus + dockModifiers.comboWindowBonus
         if time - lastSkipTime <= comboWindow {
             comboMultiplier = min(comboMultiplier + 1, 10)
         } else {
@@ -582,7 +584,7 @@ final class GameScene: SKScene {
         stoneNode.alpha = 1
         inAirSegment = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
-        maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges + stoneModifiers.extraBoostCharges
+        maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges + stoneModifiers.extraBoostCharges + dockModifiers.extraBoostCharges
         rippleBoostsRemaining = maxRippleBoosts
         lastBoostTime = 0
         lastSkipTime = 0
@@ -593,7 +595,7 @@ final class GameScene: SKScene {
         worldSpawner.reset()
         updateSpawnConfig()
         backgroundRoot.removeFromParent()
-        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome)
+        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome, dockTier: PlayerProgress.shared.dockTier)
         insertChild(backgroundRoot, at: 0)
 
         stoneNode.position = stonePosition

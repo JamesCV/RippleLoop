@@ -153,6 +153,7 @@ enum ShopCategory: String, CaseIterable, Identifiable {
     case items
     case stones
     case outfits
+    case dock
 
     var id: String { rawValue }
 
@@ -162,8 +163,11 @@ enum ShopCategory: String, CaseIterable, Identifiable {
         case .items: return "Items"
         case .stones: return "Stones"
         case .outfits: return "Outfits"
+        case .dock: return "Dock"
         }
     }
+
+    static var dockTabUnlockDistanceMeters: Double { 800 }
 }
 
 enum ItemTier: Int, Comparable {
@@ -569,5 +573,113 @@ enum LoadoutSlots {
         if bestDistance >= 1_500 { return 3 }
         if bestDistance >= 500 { return 2 }
         return 1
+    }
+}
+
+enum DockUpgradeKind: String, CaseIterable, Identifiable {
+    case rippleCrate
+    case launchRail
+    case boostKeg
+    case restBench
+    case lanternRow
+    case windChimes
+
+    var id: String { rawValue }
+
+    var category: ShopCategory { .dock }
+
+    var title: String {
+        switch self {
+        case .rippleCrate: return "Ripple Crate"
+        case .launchRail: return "Launch Rail"
+        case .boostKeg: return "Boost Keg"
+        case .restBench: return "Rest Bench"
+        case .lanternRow: return "Lantern Row"
+        case .windChimes: return "Wind Chimes"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .rippleCrate: return "+5% Ripples earned from every run"
+        case .launchRail: return "+1.5% launch power from the dock"
+        case .boostKeg: return "+1 boost charge at levels 2 and 4"
+        case .restBench: return "Last Ripple restores more forward speed"
+        case .lanternRow: return "+2s on the Last Ripple countdown"
+        case .windChimes: return "Longer combo window between skips"
+        }
+    }
+
+    var maxLevel: Int {
+        switch self {
+        case .rippleCrate, .launchRail, .windChimes: return 5
+        case .boostKeg: return 4
+        case .restBench, .lanternRow: return 3
+        }
+    }
+
+    func cost(forLevel level: Int) -> Int {
+        let base: Int
+        switch self {
+        case .rippleCrate: base = 65
+        case .launchRail: base = 60
+        case .boostKeg: base = 72
+        case .restBench: base = 68
+        case .lanternRow: base = 58
+        case .windChimes: base = 62
+        }
+        return base + level * 32
+    }
+}
+
+struct DockRunModifiers {
+    var rippleEarnMultiplier: Double = 1
+    var launchPowerBonus: CGFloat = 0
+    var extraBoostCharges: Int = 0
+    var continueSpeedBonus: CGFloat = 0
+    var lastRippleCountdownBonus: Int = 0
+    var comboWindowBonus: TimeInterval = 0
+}
+
+enum DockTier: Int, CaseIterable {
+    case weathered
+    case sturdy
+    case lantern
+    case golden
+
+    var title: String {
+        switch self {
+        case .weathered: return "Weathered Dock"
+        case .sturdy: return "Sturdy Dock"
+        case .lantern: return "Lantern Dock"
+        case .golden: return "Golden Dock"
+        }
+    }
+
+    var plankHex: String {
+        switch self {
+        case .weathered: return "#8B6914"
+        case .sturdy: return "#9B7924"
+        case .lantern: return "#AB8934"
+        case .golden: return "#C8A050"
+        }
+    }
+
+    var strokeHex: String {
+        switch self {
+        case .weathered: return "#6B5010"
+        case .sturdy: return "#7B6020"
+        case .lantern: return "#8B7030"
+        case .golden: return "#A88840"
+        }
+    }
+
+    static func from(totalLevels: Int, maxLevels: Int) -> DockTier {
+        guard maxLevels > 0 else { return .weathered }
+        let ratio = Double(totalLevels) / Double(maxLevels)
+        if ratio >= 0.85 { return .golden }
+        if ratio >= 0.55 { return .lantern }
+        if ratio >= 0.25 { return .sturdy }
+        return .weathered
     }
 }
