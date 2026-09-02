@@ -7,6 +7,8 @@ enum AppScreen: Equatable {
     case lastRipple
     case results
     case shop
+    case leaderboard
+    case settings
 }
 
 @MainActor
@@ -35,6 +37,10 @@ final class GameSession: ObservableObject {
         lastSummary = summary
         pendingContinue = nil
         screen = .results
+
+        Task {
+            await GameCenterService.shared.submitBestDistance(summary.distanceMeters)
+        }
     }
 
     func returnToDock() {
@@ -43,6 +49,14 @@ final class GameSession: ObservableObject {
 
     func openShop() {
         screen = .shop
+    }
+
+    func openLeaderboard() {
+        screen = .leaderboard
+    }
+
+    func openSettings() {
+        screen = .settings
     }
 
     func resumeAfterContinue() {
@@ -59,7 +73,5 @@ struct ContinueState: Equatable {
     let skipCount: Int
     let comboMultiplier: Int
     let pearlsCollected: Int
-    let canWatchAd: Bool
-    let canSpendPebbles: Bool
-    let pebbleCost: Int
+    let canContinue: Bool
 }

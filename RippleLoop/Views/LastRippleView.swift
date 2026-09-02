@@ -26,27 +26,10 @@ struct LastRippleView: View {
                     .padding(.vertical, 8)
 
                 VStack(spacing: 12) {
-                    if state.canWatchAd {
-                        continueButton(title: "Watch ad to continue", icon: "play.rectangle") {
+                    if state.canContinue {
+                        continueButton(title: "Continue", icon: "arrow.up.circle") {
                             stopTimer()
-                            onAction(.watchAd)
-                        }
-                    }
-
-                    if PlayerProgress.shared.canUseDailyFreeContinue {
-                        continueButton(title: "Free daily continue", icon: "gift") {
-                            stopTimer()
-                            onAction(.freeDaily)
-                        }
-                    }
-
-                    if state.canSpendPebbles {
-                        continueButton(
-                            title: "Spend \(state.pebbleCost) Pebbles",
-                            icon: "circle.fill"
-                        ) {
-                            stopTimer()
-                            onAction(.spendPebbles)
+                            onAction(.continueRun)
                         }
                     }
 
@@ -61,7 +44,11 @@ struct LastRippleView: View {
             }
             .padding(32)
         }
-        .onAppear { startTimer() }
+        .onAppear {
+            SoundManager.shared.playSink()
+            HapticManager.sink()
+            startTimer()
+        }
         .onDisappear { stopTimer() }
     }
 
@@ -96,4 +83,9 @@ struct LastRippleView: View {
         timer?.invalidate()
         timer = nil
     }
+}
+
+enum ContinueAction {
+    case continueRun
+    case decline
 }

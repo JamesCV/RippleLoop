@@ -31,6 +31,7 @@ final class GameScene: SKScene {
     private var comboPeak = 1
     private var lastSkipTime: TimeInterval = 0
     private var pearlsCollected = 0
+    private var lastPearlCount = 0
 
     private var isHoldingBounce = false
     private var doubleBouncesRemaining = 0
@@ -189,6 +190,8 @@ final class GameScene: SKScene {
         pebble.showSpirit(at: CGPoint(x: GameConstants.launchX, y: GameConstants.dockY + 20))
         hud.setHint("Hold to rise · Double-tap to bounce")
         aimOverlay.resetSwipe()
+        HapticManager.launch()
+        SoundManager.shared.playLaunch()
     }
 
     private func handleBounceInput(at time: TimeInterval) {
@@ -205,6 +208,8 @@ final class GameScene: SKScene {
             )
             worldNode.addChild(ripple)
             hud.flashCombo()
+            HapticManager.doubleBounce()
+            SoundManager.shared.playDoubleBounce()
         } else {
             StonePhysics.applyBounce(velocity: &stoneVelocity, holding: false)
             let ripple = RippleEffect(
@@ -212,6 +217,8 @@ final class GameScene: SKScene {
                 strength: 0.6
             )
             worldNode.addChild(ripple)
+            HapticManager.bounce()
+            SoundManager.shared.playBounce()
         }
         lastTapTime = time
         updateBounceHUD()
@@ -245,6 +252,14 @@ final class GameScene: SKScene {
 
         let magnet = PlayerProgress.shared.pearlMagnetRadius
         pearlsCollected += worldSpawner.collectPearls(near: stonePosition, magnetRadius: magnet)
+        if pearlsCollected > lastPearlCount {
+            let gained = pearlsCollected - lastPearlCount
+            lastPearlCount = pearlsCollected
+            for _ in 0..<gained {
+                HapticManager.pearl()
+                SoundManager.shared.playPearl()
+            }
+        }
 
         if stonePosition.y <= GameConstants.waterSurfaceY && stoneVelocity.dy < 0 {
             inAirSegment = false
@@ -288,6 +303,8 @@ final class GameScene: SKScene {
         sinkStartedAt = time
         stoneVelocity = CGVector(dx: stoneVelocity.dx * 0.3, dy: -60)
         hud.setHint("")
+        HapticManager.sink()
+        SoundManager.shared.playSink()
         _ = reason
     }
 
@@ -312,12 +329,7 @@ final class GameScene: SKScene {
     private func offerContinueOrFinish() {
         guard phase == .sinking else { return }
 
-        let progress = PlayerProgress.shared
-        let canWatchAd = !progress.adContinueUsedThisRun
-        let canSpendPebbles = progress.pebbles >= progress.continuePebbleCost
-        let canFree = progress.canUseDailyFreeContinue && continuesUsed == 0
-
-        if !hasOfferedContinue && (canWatchAd || canSpendPebbles || canFree) {
+        if !hasOfferedContinue && continuesUsed == 0 {
             hasOfferedContinue = true
             phase = .finished
             let state = ContinueState(
@@ -325,9 +337,7 @@ final class GameScene: SKScene {
                 skipCount: skipCount,
                 comboMultiplier: comboMultiplier,
                 pearlsCollected: pearlsCollected,
-                canWatchAd: canWatchAd,
-                canSpendPebbles: canSpendPebbles,
-                pebbleCost: progress.continuePebbleCost
+                canContinue: true
             )
             host?.gameSceneDidRequestLastRipple(state)
         } else {
@@ -360,6 +370,8 @@ final class GameScene: SKScene {
         lastSkipTime = time
         hud.updateCombo(comboMultiplier)
         hud.flashCombo()
+        HapticManager.skip(combo: comboMultiplier)
+        SoundManager.shared.playSkip(combo: comboMultiplier)
     }
 
     private func updateBiomeIfNeeded() {
@@ -369,6 +381,8 @@ final class GameScene: SKScene {
         ParallaxBackground.applyBiome(biome, to: backgroundRoot, sceneSize: size)
         backgroundColor = SKColor.hex(biome.skyBottom)
         hud.updateBiome(biome.displayName)
+        HapticManager.biomeShift()
+        SoundManager.shared.playBiomeShift()
     }
 
     private func resetRun() {
@@ -381,6 +395,7 @@ final class GameScene: SKScene {
         comboMultiplier = 1
         comboPeak = 1
         pearlsCollected = 0
+        lastPearlCount = 0
         currentBiome = .goldenHour
         hasOfferedContinue = false
         continuesUsed = 0

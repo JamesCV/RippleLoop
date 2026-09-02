@@ -5,55 +5,59 @@ A meditative endless stone-skipping iPhone game. Pebble throws from a cozy dock;
 ## Requirements
 
 - macOS with Xcode 16+
-- Apple Developer account (for device testing and App Store release)
+- Apple Developer account (for device testing, Game Center, and App Store release)
 - iPhone running iOS 17+
 
 ## Open and Run
 
 1. Open `RippleLoop.xcodeproj` in Xcode.
 2. Select the **RippleLoop** scheme.
-3. Choose an iPhone simulator or a connected device.
-4. Press **Run** (⌘R).
+3. Enable **Game Center** capability (Signing & Capabilities — should auto-apply from entitlements).
+4. Choose an iPhone simulator or a connected device.
+5. Press **Run** (⌘R).
+
+## Game Center Leaderboards
+
+Create a leaderboard in [App Store Connect](https://appstoreconnect.apple.com) → your app → Game Center:
+
+| Field | Value |
+|-------|-------|
+| Leaderboard ID | `com.rippleloop.game.bestdistance` |
+| Score format | Integer |
+| Sort order | High to low |
+| Score range | 0 – 999,999 |
+
+Scores represent **best distance in meters**. The app submits after each run and shows **Global** and **Friends** tabs on the dock **Board** screen.
+
+Sign in with a Game Center sandbox account on device/simulator to test.
 
 ## Gameplay
 
-- **Dock menu** — cozy home screen with Play, Shop, and stats.
-- **Throw** — Pebble winds up; swipe to set power and angle.
-- **Flight** — hold to rise, release to fall (Jetpack-style vertical control).
-- **Double bounce** — two quick taps for extra height (limited per air segment).
-- **Skips** — chain water skips to build combo multiplier.
-- **Pearls** — collect during runs for bonus Ripples.
-- **Biomes** — Golden Hour → Mist Morning → Glass Twilight → Still Arctic → Ember Deep.
-- **Last Ripple** — on death, watch an ad, spend Pebbles, or use a daily continue.
-- **Workbench** — spend Ripples on permanent upgrades between runs.
+- **Dock menu** — Play, Shop, Board (leaderboards), Settings
+- **Throw** — Pebble winds up; swipe to set power and angle
+- **Flight** — hold to rise, double-tap to bounce over obstacles
+- **Skips** — chain skips build combo multiplier with ASMR tones + haptics
+- **Biomes** — five distance-based environments
+- **Last Ripple** — one free continue per run (no ads/IAP yet)
+- **Workbench** — spend Ripples on permanent upgrades
 
-## Controls
+## Sound & Haptics
 
-- **Swipe** from the lower-left to aim Pebble's throw.
-- **Right-edge slider** adjusts launch angle.
-- **Hold** during flight to rise gently.
-- **Double-tap** for a double bounce over obstacles.
-- Collect pearls in low / mid / high lanes.
+Procedural skip tones (pitch rises with combo) and UIKit haptics on skips, bounces, pearls, biome shifts, and new bests. Toggle both in **Settings** on the dock.
 
 ## Project Structure
 
 ```
 RippleLoop/
-├── Views/              # SwiftUI dock, shop, results, continue flow
-├── Game/               # SpriteKit scenes, Pebble, physics, spawner
-├── Models/             # Biomes, upgrades, progress, session state
-└── RippleLoopTests/    # Physics unit tests
+├── Services/           # Game Center, sound, haptics, settings
+├── Views/              # SwiftUI screens
+├── Game/               # SpriteKit gameplay
+└── Models/             # Progress, biomes, upgrades
 ```
-
-## Monetization (planned)
-
-- Free with rewarded ads (continue, bonus Ripples).
-- IAP: Pebble packs, Remove Ads, Skip Pass, cosmetics.
-- Continue/resurrection is the primary paid moment.
 
 ## Tests
 
-Run unit tests with **⌘U**. `StonePhysicsTests` covers launch, skip, and bounce physics.
+Run unit tests with **⌘U**.
 
 ## License
 

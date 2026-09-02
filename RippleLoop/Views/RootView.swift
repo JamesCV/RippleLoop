@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @StateObject private var session = GameSession()
+    @ObservedObject private var gameCenter = GameCenterService.shared
 
     var body: some View {
         ZStack {
@@ -19,6 +20,12 @@ struct RootView: View {
                 }
             case .shop:
                 ShopView()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .leaderboard:
+                LeaderboardView()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .settings:
+                SettingsView()
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
@@ -39,6 +46,12 @@ struct RootView: View {
                         }
                     }
             }
+        }
+        .background {
+            GameCenterAuthPresenter(viewController: gameCenter.authenticationViewController)
+        }
+        .onAppear {
+            gameCenter.authenticate()
         }
     }
 }

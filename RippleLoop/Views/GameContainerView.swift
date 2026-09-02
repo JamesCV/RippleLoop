@@ -29,16 +29,9 @@ struct GameContainerView: View {
 
     private func handleContinueAction(_ action: ContinueAction) {
         switch action {
-        case .watchAd:
-            PlayerProgress.shared.adContinueUsedThisRun = true
-            session.resumeAfterContinue()
-            scene.resumeFromContinue()
-        case .spendPebbles:
-            guard PlayerProgress.shared.spendPebblesForContinue() else { return }
-            session.resumeAfterContinue()
-            scene.resumeFromContinue()
-        case .freeDaily:
-            PlayerProgress.shared.markDailyFreeContinueUsed()
+        case .continueRun:
+            HapticManager.doubleBounce()
+            SoundManager.shared.playDoubleBounce()
             session.resumeAfterContinue()
             scene.resumeFromContinue()
         case .decline:
@@ -63,10 +56,6 @@ struct GameContainerView: View {
     }
 }
 
-enum ContinueAction {
-    case watchAd, spendPebbles, freeDaily, decline
-}
-
 @MainActor
 final class GameSceneCoordinator: GameSceneHost {
     private let session: GameSession
@@ -82,6 +71,10 @@ final class GameSceneCoordinator: GameSceneHost {
     }
 
     func gameSceneDidFinish(_ summary: RunSummary) {
+        if summary.isNewBest {
+            HapticManager.newBest()
+            SoundManager.shared.playNewBest()
+        }
         session.finishRun(summary)
     }
 }

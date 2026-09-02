@@ -130,7 +130,6 @@ final class PlayerProgress {
     func grantFTUERipplesIfNeeded() {
         guard !ftueComplete else { return }
         ripples += 60
-        pebbles += 5
         ftueComplete = true
     }
 

@@ -57,6 +57,8 @@ struct DockMenuView: View {
 
                 VStack(spacing: 14) {
                     Button {
+                        HapticManager.menuTap()
+                        SoundManager.shared.playMenuTap()
                         session.startRun()
                     } label: {
                         HStack(spacing: 10) {
@@ -72,10 +74,19 @@ struct DockMenuView: View {
 
                     HStack(spacing: 12) {
                         dockButton(title: "Shop", icon: "hammer") {
+                            HapticManager.menuTap()
+                            SoundManager.shared.playMenuTap()
                             session.openShop()
                         }
-                        dockButton(title: "Runs", icon: "figure.walk") {
-                            session.showToast("\(progress.totalRuns) runs logged")
+                        dockButton(title: "Board", icon: "trophy") {
+                            HapticManager.menuTap()
+                            SoundManager.shared.playMenuTap()
+                            session.openLeaderboard()
+                        }
+                        dockButton(title: "Settings", icon: "slider.horizontal.3") {
+                            HapticManager.menuTap()
+                            SoundManager.shared.playMenuTap()
+                            session.openSettings()
                         }
                     }
                 }

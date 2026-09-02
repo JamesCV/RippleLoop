@@ -50,9 +50,11 @@ struct ResultsView: View {
                 Spacer()
 
                 VStack(spacing: 14) {
-                    Button {
-                        session.startRun()
-                    } label: {
+                Button {
+                    HapticManager.menuTap()
+                    SoundManager.shared.playMenuTap()
+                    session.startRun()
+                } label: {
                         Text("Skip Again")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                             .frame(maxWidth: .infinity)
