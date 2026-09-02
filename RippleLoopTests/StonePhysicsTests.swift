@@ -42,4 +42,17 @@ final class StonePhysicsTests: XCTestCase {
         StonePhysics.applyDoubleBounce(velocity: &double)
         XCTAssertGreaterThan(double.dy, single.dy)
     }
+
+    func testComboMomentumAddsSpeed() {
+        var velocity = CGVector(dx: 200, dy: -80)
+        StonePhysics.applyComboMomentum(velocity: &velocity, combo: 4, factor: 0.02)
+        XCTAssertGreaterThan(velocity.dx, 200)
+    }
+
+    func testRippleBoostAddsSpeed() {
+        var velocity = CGVector(dx: 180, dy: -60)
+        StonePhysics.applyRippleBoost(velocity: &velocity, strength: 1, combo: 3)
+        XCTAssertGreaterThan(velocity.dx, 180)
+        XCTAssertGreaterThan(velocity.dy, 0)
+    }
 }

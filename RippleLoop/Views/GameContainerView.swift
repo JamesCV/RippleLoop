@@ -7,6 +7,7 @@ struct GameContainerView: View {
         width: GameConstants.sceneWidth,
         height: GameConstants.sceneHeight
     ))
+    @State private var boostPulse = false
 
     var body: some View {
         ZStack {
@@ -18,12 +19,42 @@ struct GameContainerView: View {
                     handleContinueAction(action)
                 }
                 .transition(.opacity)
+            } else if session.screen == .playing {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: triggerBoost) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                Text("BOOST")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(Color(hex: "#2A3848"))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color(hex: "#FFD878").opacity(boostPulse ? 0.7 : 1), in: Capsule())
+                            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.top, 52)
+                    }
+                    Spacer()
+                }
             }
         }
         .id(session.runGeneration)
         .onAppear {
             scene.host = GameSceneCoordinator(session: session, scene: scene)
             scene.beginRun()
+        }
+    }
+
+    private func triggerBoost() {
+        scene.useRippleBoostFromButton()
+        withAnimation(.easeOut(duration: 0.12)) { boostPulse = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            boostPulse = false
         }
     }
 

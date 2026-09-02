@@ -14,6 +14,8 @@ final class PlayerProgress {
         static let dailyFreeContinueUsed = "ripplerun.dailyFreeContinue"
         static let dailyFreeContinueDate = "ripplerun.dailyFreeContinueDate"
         static let upgradePrefix = "ripplerun.upgrade."
+        static let itemPrefix = "ripplerun.item."
+        static let equippedItem = "ripplerun.equippedItem"
     }
 
     var bestDistanceMeters: Double {
@@ -46,50 +48,40 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: Key.adContinueUsedThisRun) }
     }
 
-    var launchPowerLevel: Int {
-        get { level(for: .launchPower) }
-        set { setLevel(newValue, for: .launchPower) }
+    var equippedItemForNextRun: ShopItemKind? {
+        get {
+            guard let raw = defaults.string(forKey: Key.equippedItem) else { return nil }
+            return ShopItemKind(rawValue: raw)
+        }
+        set {
+            if let newValue {
+                defaults.set(newValue.rawValue, forKey: Key.equippedItem)
+            } else {
+                defaults.removeObject(forKey: Key.equippedItem)
+            }
+        }
     }
 
-    var skipForgivenessLevel: Int {
-        get { level(for: .skipForgiveness) }
-        set { setLevel(newValue, for: .skipForgiveness) }
-    }
+    var launchPowerLevel: Int { level(for: .launchPower) }
+    var skipForgivenessLevel: Int { level(for: .skipForgiveness) }
+    var doubleBounceStaminaLevel: Int { level(for: .doubleBounceStamina) }
+    var bounceFloatLevel: Int { level(for: .bounceFloat) }
+    var pearlMagnetLevel: Int { level(for: .pearlMagnet) }
+    var rippleBoostCapacityLevel: Int { level(for: .rippleBoostCapacity) }
+    var rippleBoostPowerLevel: Int { level(for: .rippleBoostPower) }
+    var speedRetentionLevel: Int { level(for: .speedRetention) }
+    var comboMomentumLevel: Int { level(for: .comboMomentum) }
 
-    var doubleBounceStaminaLevel: Int {
-        get { level(for: .doubleBounceStamina) }
-        set { setLevel(newValue, for: .doubleBounceStamina) }
-    }
+    var launchPowerBonus: CGFloat { CGFloat(launchPowerLevel) * 0.06 }
+    var skipAngleBonus: CGFloat { CGFloat(skipForgivenessLevel) * 0.04 }
+    var doubleBouncesPerSegment: Int { 1 + doubleBounceStaminaLevel }
+    var bounceFloatFactor: CGFloat { 1.0 - CGFloat(bounceFloatLevel) * 0.08 }
+    var pearlMagnetRadius: CGFloat { 28 + CGFloat(pearlMagnetLevel) * 14 }
 
-    var bounceFloatLevel: Int {
-        get { level(for: .bounceFloat) }
-        set { setLevel(newValue, for: .bounceFloat) }
-    }
-
-    var pearlMagnetLevel: Int {
-        get { level(for: .pearlMagnet) }
-        set { setLevel(newValue, for: .pearlMagnet) }
-    }
-
-    var launchPowerBonus: CGFloat {
-        CGFloat(launchPowerLevel) * 0.06
-    }
-
-    var skipAngleBonus: CGFloat {
-        CGFloat(skipForgivenessLevel) * 0.04
-    }
-
-    var doubleBouncesPerSegment: Int {
-        1 + doubleBounceStaminaLevel
-    }
-
-    var bounceFloatFactor: CGFloat {
-        1.0 - CGFloat(bounceFloatLevel) * 0.08
-    }
-
-    var pearlMagnetRadius: CGFloat {
-        28 + CGFloat(pearlMagnetLevel) * 14
-    }
+    var rippleBoostsPerRun: Int { 2 + rippleBoostCapacityLevel }
+    var rippleBoostStrength: CGFloat { 1.0 + CGFloat(rippleBoostPowerLevel) * 0.12 }
+    var skipSpeedRetentionBonus: CGFloat { CGFloat(speedRetentionLevel) * 0.012 }
+    var comboMomentumFactor: CGFloat { CGFloat(comboMomentumLevel) * 0.018 }
 
     var continuePebbleCost: Int { 5 }
 
@@ -117,6 +109,14 @@ final class PlayerProgress {
         defaults.set(max(0, min(level, upgrade.maxLevel)), forKey: Key.upgradePrefix + upgrade.rawValue)
     }
 
+    func itemCount(_ item: ShopItemKind) -> Int {
+        max(0, defaults.integer(forKey: Key.itemPrefix + item.rawValue))
+    }
+
+    func setItemCount(_ count: Int, for item: ShopItemKind) {
+        defaults.set(max(0, count), forKey: Key.itemPrefix + item.rawValue)
+    }
+
     func purchaseUpgrade(_ upgrade: UpgradeKind) -> Bool {
         let current = level(for: upgrade)
         guard current < upgrade.maxLevel else { return false }
@@ -127,9 +127,49 @@ final class PlayerProgress {
         return true
     }
 
+    func purchaseItem(_ item: ShopItemKind) -> Bool {
+        guard ripples >= item.cost else { return false }
+        ripples -= item.cost
+        setItemCount(itemCount(item) + 1, for: item)
+        return true
+    }
+
+    func equipItem(_ item: ShopItemKind?) {
+        guard let item else {
+            equippedItemForNextRun = nil
+            return
+        }
+        guard itemCount(item) > 0 else { return }
+        equippedItemForNextRun = item
+    }
+
+    func consumeEquippedItemIfNeeded() -> RunItemModifiers {
+        var modifiers = RunItemModifiers()
+        guard let equipped = equippedItemForNextRun else { return modifiers }
+        guard itemCount(equipped) > 0 else {
+            equippedItemForNextRun = nil
+            return modifiers
+        }
+
+        setItemCount(itemCount(equipped) - 1, for: equipped)
+        equippedItemForNextRun = nil
+
+        switch equipped {
+        case .surgePack:
+            modifiers.extraBoostCharges = 2
+        case .tailwindDraught:
+            modifiers.launchSpeedMultiplier = 1.25
+        case .glideCharm:
+            modifiers.extraSkipForgiveness = 0.08
+        case .momentumSeed:
+            modifiers.momentumSeedActive = true
+        }
+        return modifiers
+    }
+
     func grantFTUERipplesIfNeeded() {
         guard !ftueComplete else { return }
-        ripples += 60
+        ripples += 80
         ftueComplete = true
     }
 

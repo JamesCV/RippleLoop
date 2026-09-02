@@ -31,6 +31,12 @@ enum GameConstants {
     static let sinkDuration: TimeInterval = 1.8
     static let throwAnimationDuration: TimeInterval = 0.55
 
+    static let rippleBoostSpeed: CGFloat = 240
+    static let rippleBoostLift: CGFloat = 180
+    static let rippleBoostCooldown: TimeInterval = 0.45
+    static let minSpeedBeforeSinkWarning: CGFloat = 70
+    static let speedCurrentBurst: CGFloat = 160
+
     static let skyTop = "#C9A7E8"
     static let skyBottom = "#F5C4A8"
     static let waterDeep = "#3E8798"

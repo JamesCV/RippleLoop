@@ -10,6 +10,7 @@ final class HUDNode: SKNode {
     private let powerBarBackground = SKShapeNode(rectOf: CGSize(width: 14, height: 180), cornerRadius: 7)
     private let powerBarFill = SKShapeNode(rectOf: CGSize(width: 10, height: 4), cornerRadius: 3)
     private let bounceLabel = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
+    private let boostLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
 
     override init() {
         super.init()
@@ -21,6 +22,7 @@ final class HUDNode: SKNode {
         setupBiome()
         setupHint()
         setupBounceIndicator()
+        setupBoostIndicator()
     }
 
     @available(*, unavailable)
@@ -64,6 +66,23 @@ final class HUDNode: SKNode {
     func updateBounces(remaining: Int, max: Int) {
         bounceLabel.text = remaining > 0 ? "bounce \(remaining)" : ""
         bounceLabel.alpha = remaining > 0 ? 1 : 0.35
+    }
+
+    func updateBoosts(remaining: Int, max: Int, speed: Double) {
+        boostLabel.text = "BOOST \(remaining)"
+        boostLabel.alpha = remaining > 0 ? 1 : 0.4
+        if speed < 12 && remaining > 0 {
+            boostLabel.fontColor = SKColor.hex("#FFD878")
+        } else {
+            boostLabel.fontColor = SKColor.hex("#9BE7A8")
+        }
+    }
+
+    func flashBoost() {
+        boostLabel.run(SKAction.sequence([
+            SKAction.scale(to: 1.2, duration: 0.06),
+            SKAction.scale(to: 1.0, duration: 0.1)
+        ]))
     }
 
     func setHint(_ text: String) {
@@ -134,7 +153,7 @@ final class HUDNode: SKNode {
         hintLabel.fontColor = SKColor.white.withAlphaComponent(0.75)
         hintLabel.horizontalAlignmentMode = .center
         hintLabel.position = CGPoint(x: 195, y: -760)
-        hintLabel.text = "Hold to rise · Double-tap to bounce"
+        hintLabel.text = "Hold to rise · BOOST for speed"
         addChild(hintLabel)
     }
 
@@ -144,5 +163,14 @@ final class HUDNode: SKNode {
         bounceLabel.horizontalAlignmentMode = .right
         bounceLabel.position = CGPoint(x: -24, y: -24)
         addChild(bounceLabel)
+    }
+
+    private func setupBoostIndicator() {
+        boostLabel.fontSize = 13
+        boostLabel.fontColor = SKColor.hex("#9BE7A8")
+        boostLabel.horizontalAlignmentMode = .right
+        boostLabel.verticalAlignmentMode = .top
+        boostLabel.position = CGPoint(x: -24, y: -80)
+        addChild(boostLabel)
     }
 }

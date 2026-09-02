@@ -33,6 +33,12 @@ final class WorldSpawner {
             container.addChild(log)
         }
 
+        if spawnIndex > 1 && Double.random(in: 0...1) < 0.22 + difficulty * 0.12 {
+            let current = SpeedCurrentNode()
+            current.position.x = nextSpawnX + CGFloat.random(in: 20...100)
+            container.addChild(current)
+        }
+
         let pearlCount = Int.random(in: 1...3)
         for index in 0..<pearlCount {
             let lane: PearlLane
@@ -63,6 +69,19 @@ final class WorldSpawner {
             let distance = hypot(dx, dy)
             if distance <= magnetRadius {
                 pearl.collect()
+                collected += 1
+            }
+        }
+        return collected
+    }
+
+    func collectSpeedCurrents(near stonePosition: CGPoint, radius: CGFloat = 36) -> Int {
+        var collected = 0
+        for case let current as SpeedCurrentNode in container.children {
+            let dx = current.position.x - stonePosition.x
+            let dy = current.position.y - stonePosition.y
+            if hypot(dx, dy) <= radius {
+                current.collect()
                 collected += 1
             }
         }

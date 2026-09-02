@@ -73,7 +73,7 @@ struct DockMenuView: View {
                     }
 
                     HStack(spacing: 12) {
-                        dockButton(title: "Shop", icon: "hammer") {
+                        dockButton(title: "Shop", icon: "bag") {
                             HapticManager.menuTap()
                             SoundManager.shared.playMenuTap()
                             session.openShop()

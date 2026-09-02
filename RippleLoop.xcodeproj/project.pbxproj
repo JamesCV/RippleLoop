@@ -22,7 +22,7 @@
 		B10000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000013 /* PrivacyInfo.xcprivacy */; };
 		B10000000000000000000014 /* StonePhysicsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000014 /* StonePhysicsTests.swift */; };
 		B10000000000000000000015 /* Biome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000018 /* Biome.swift */; };
-		B10000000000000000000016 /* UpgradeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000019 /* UpgradeCatalog.swift */; };
+		B10000000000000000000016 /* ShopCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000019 /* ShopCatalog.swift */; };
 		B10000000000000000000017 /* GameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000020 /* GameSession.swift */; };
 		B10000000000000000000018 /* PebbleNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000021 /* PebbleNode.swift */; };
 		B10000000000000000000019 /* PearlNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000022 /* PearlNode.swift */; };
@@ -42,7 +42,7 @@
 		B10000000000000000000033 /* GameCenterAuthPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000036 /* GameCenterAuthPresenter.swift */; };
 		B10000000000000000000034 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000037 /* LeaderboardView.swift */; };
 		B10000000000000000000035 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000038 /* SettingsView.swift */; };
-		B10000000000000000000036 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F10000000000000000000039 /* GameKit.framework */; };
+		B10000000000000000000037 /* SpeedCurrentNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000041 /* SpeedCurrentNode.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,7 +74,7 @@
 		F10000000000000000000016 /* RippleLoop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RippleLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F10000000000000000000017 /* RippleLoopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RippleLoopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F10000000000000000000018 /* Biome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Biome.swift; sourceTree = "<group>"; };
-		F10000000000000000000019 /* UpgradeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeCatalog.swift; sourceTree = "<group>"; };
+		F10000000000000000000019 /* ShopCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopCatalog.swift; sourceTree = "<group>"; };
 		F10000000000000000000020 /* GameSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSession.swift; sourceTree = "<group>"; };
 		F10000000000000000000021 /* PebbleNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNode.swift; sourceTree = "<group>"; };
 		F10000000000000000000022 /* PearlNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PearlNode.swift; sourceTree = "<group>"; };
@@ -96,6 +96,7 @@
 		F10000000000000000000038 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F10000000000000000000039 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		F10000000000000000000040 /* RippleLoop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RippleLoop.entitlements; sourceTree = "<group>"; };
+		F10000000000000000000041 /* SpeedCurrentNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedCurrentNode.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +175,7 @@
 				F10000000000000000000022 /* PearlNode.swift */,
 				F10000000000000000000023 /* LogObstacle.swift */,
 				F10000000000000000000024 /* WorldSpawner.swift */,
+				F10000000000000000000041 /* SpeedCurrentNode.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -184,7 +186,7 @@
 				F10000000000000000000010 /* GameState.swift */,
 				F10000000000000000000011 /* PlayerProgress.swift */,
 				F10000000000000000000018 /* Biome.swift */,
-				F10000000000000000000019 /* UpgradeCatalog.swift */,
+				F10000000000000000000019 /* ShopCatalog.swift */,
 				F10000000000000000000020 /* GameSession.swift */,
 			);
 			path = Models;
@@ -322,7 +324,7 @@
 				B10000000000000000000010 /* GameState.swift in Sources */,
 				B10000000000000000000011 /* PlayerProgress.swift in Sources */,
 				B10000000000000000000015 /* Biome.swift in Sources */,
-				B10000000000000000000016 /* UpgradeCatalog.swift in Sources */,
+				B10000000000000000000016 /* ShopCatalog.swift in Sources */,
 				B10000000000000000000017 /* GameSession.swift in Sources */,
 				B10000000000000000000018 /* PebbleNode.swift in Sources */,
 				B10000000000000000000019 /* PearlNode.swift in Sources */,
@@ -342,6 +344,7 @@
 				B10000000000000000000033 /* GameCenterAuthPresenter.swift in Sources */,
 				B10000000000000000000034 /* LeaderboardView.swift in Sources */,
 				B10000000000000000000035 /* SettingsView.swift in Sources */,
+				B10000000000000000000037 /* SpeedCurrentNode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

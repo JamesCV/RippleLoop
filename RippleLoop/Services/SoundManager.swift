@@ -78,6 +78,13 @@ final class SoundManager {
         playTone(frequency: 340, duration: 0.2, volume: 0.1, decay: 0.8)
     }
 
+    func playBoost() {
+        playTone(frequency: 720, duration: 0.09, volume: 0.22, decay: 0.88)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { [weak self] in
+            self?.playTone(frequency: 960, duration: 0.07, volume: 0.16, decay: 0.9)
+        }
+    }
+
     private func playTone(frequency: Double, duration: Double, volume: Float, decay: Double) {
         guard settings.soundEnabled else { return }
         ensureEngine()

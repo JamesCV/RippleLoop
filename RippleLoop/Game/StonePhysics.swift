@@ -31,7 +31,8 @@ enum StonePhysics {
     static func attemptSkip(
         velocity: inout CGVector,
         at position: inout CGPoint,
-        angleBonus: CGFloat = 0
+        angleBonus: CGFloat = 0,
+        retentionBonus: CGFloat = 0
     ) -> Bool {
         let currentSpeed = speed(velocity)
         guard currentSpeed >= GameConstants.minSkipSpeed else { return false }
@@ -40,9 +41,35 @@ enum StonePhysics {
         guard entryAngle <= GameConstants.maxSkipEntryAngle + angleBonus else { return false }
 
         velocity.dy = abs(velocity.dy) * GameConstants.skipVerticalBoost
-        velocity.dx *= GameConstants.skipHorizontalRetention
+        velocity.dx *= GameConstants.skipHorizontalRetention + retentionBonus
         position.y = GameConstants.waterSurfaceY + 2
         return true
+    }
+
+    static func applyRippleBoost(velocity: inout CGVector, strength: CGFloat, combo: Int) {
+        let currentSpeed = max(speed(velocity), 60)
+        let direction = CGVector(
+            dx: velocity.dx / max(currentSpeed, 1),
+            dy: velocity.dy / max(currentSpeed, 1)
+        )
+        let comboBonus = 1 + CGFloat(max(combo - 1, 0)) * 0.04
+        let surge = (GameConstants.rippleBoostSpeed + currentSpeed * 0.25) * strength * comboBonus
+        velocity.dx = direction.dx * (currentSpeed + surge) + 24
+        velocity.dy = max(velocity.dy, 0) + GameConstants.rippleBoostLift * strength
+    }
+
+    static func applyComboMomentum(velocity: inout CGVector, combo: Int, factor: CGFloat) {
+        guard combo > 1, factor > 0 else { return }
+        let boost = 1 + CGFloat(combo - 1) * factor
+        velocity.dx *= boost
+        velocity.dy = max(velocity.dy, abs(velocity.dy) * 0.5)
+    }
+
+    static func applySpeedCurrent(velocity: inout CGVector) {
+        let currentSpeed = max(speed(velocity), 80)
+        velocity.dx += GameConstants.speedCurrentBurst
+        velocity.dy = max(velocity.dy, 120)
+        _ = currentSpeed
     }
 
     static func applyBounce(velocity: inout CGVector, holding: Bool) {
