@@ -151,6 +151,8 @@ enum UpgradeKind: String, CaseIterable, Identifiable {
 enum ShopCategory: String, CaseIterable, Identifiable {
     case skills
     case items
+    case stones
+    case outfits
 
     var id: String { rawValue }
 
@@ -158,6 +160,8 @@ enum ShopCategory: String, CaseIterable, Identifiable {
         switch self {
         case .skills: return "Skills"
         case .items: return "Items"
+        case .stones: return "Stones"
+        case .outfits: return "Outfits"
         }
     }
 }
@@ -165,9 +169,18 @@ enum ShopCategory: String, CaseIterable, Identifiable {
 enum ItemTier: Int, Comparable {
     case common = 1
     case uncommon = 2
+    case rare = 3
 
     static func < (lhs: ItemTier, rhs: ItemTier) -> Bool {
         lhs.rawValue < rhs.rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .common: return "Common"
+        case .uncommon: return "Uncommon"
+        case .rare: return "Rare"
+        }
     }
 }
 
@@ -186,6 +199,12 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
     case currentRider
     case skippersTea
     case mistVeil
+    // Tier 3 — Rare
+    case glassSkim
+    case pearlTide
+    case deepCurrent
+    case secondWind
+    case skippersLuck
 
     var id: String { rawValue }
 
@@ -198,6 +217,8 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
             return .common
         case .comboKindling, .logWhisper, .currentRider, .skippersTea, .mistVeil:
             return .uncommon
+        case .glassSkim, .pearlTide, .deepCurrent, .secondWind, .skippersLuck:
+            return .rare
         }
     }
 
@@ -215,6 +236,11 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .currentRider: return "Current Rider"
         case .skippersTea: return "Skipper's Tea"
         case .mistVeil: return "Mist Veil"
+        case .glassSkim: return "Glass Skim"
+        case .pearlTide: return "Pearl Tide"
+        case .deepCurrent: return "Deep Current"
+        case .secondWind: return "Second Wind"
+        case .skippersLuck: return "Skipper's Luck"
         }
     }
 
@@ -232,6 +258,11 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .currentRider: return "First 3 currents grant +2 boosts each"
         case .skippersTea: return "Boost cooldown −40%"
         case .mistVeil: return "Fewer obstacles for the first 800m"
+        case .glassSkim: return "Extra forgiving skip angles all run"
+        case .pearlTide: return "More pearls spawn along the lake"
+        case .deepCurrent: return "Every current grants +1 boost charge"
+        case .secondWind: return "Last Ripple refills all boost charges"
+        case .skippersLuck: return "+15% Ripples earned this run"
         }
     }
 
@@ -249,6 +280,222 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .currentRider: return 75
         case .skippersTea: return 68
         case .mistVeil: return 72
+        case .glassSkim: return 88
+        case .pearlTide: return 92
+        case .deepCurrent: return 95
+        case .secondWind: return 105
+        case .skippersLuck: return 98
+        }
+    }
+}
+
+enum StoneKind: String, CaseIterable, Identifiable {
+    case smoothStone
+    case slateSkipper
+    case sunstone
+    case lakeGlass
+    case ironSkip
+    case moonPebble
+    case heartRock
+
+    var id: String { rawValue }
+
+    var category: ShopCategory { .stones }
+
+    var title: String {
+        switch self {
+        case .smoothStone: return "Smooth Stone"
+        case .slateSkipper: return "Slate Skipper"
+        case .sunstone: return "Sunstone"
+        case .lakeGlass: return "Lake Glass"
+        case .ironSkip: return "Iron Skip"
+        case .moonPebble: return "Moon Pebble"
+        case .heartRock: return "Heart Rock"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .smoothStone: return "Balanced river rock — your faithful starter"
+        case .slateSkipper: return "+2% speed kept after each skip"
+        case .sunstone: return "+3% launch power"
+        case .lakeGlass: return "Wider skip angle window"
+        case .ironSkip: return "+1 Ripple Boost charge per run"
+        case .moonPebble: return "Longer combo window between skips"
+        case .heartRock: return "+1 Ripple per pearl collected"
+        }
+    }
+
+    var unlockDistanceMeters: Double {
+        switch self {
+        case .smoothStone: return 0
+        case .slateSkipper: return 0
+        case .sunstone: return 200
+        case .lakeGlass: return 500
+        case .ironSkip: return 1_000
+        case .moonPebble: return 1_500
+        case .heartRock: return 2_000
+        }
+    }
+
+    var cost: Int {
+        switch self {
+        case .smoothStone: return 0
+        case .slateSkipper: return 45
+        case .sunstone: return 55
+        case .lakeGlass: return 65
+        case .ironSkip: return 80
+        case .moonPebble: return 75
+        case .heartRock: return 90
+        }
+    }
+
+    var isDefaultOwned: Bool {
+        self == .smoothStone
+    }
+
+    var fillHex: String {
+        switch self {
+        case .smoothStone: return "#D0D0D0"
+        case .slateSkipper: return "#6A7080"
+        case .sunstone: return "#E8B060"
+        case .lakeGlass: return "#88D8E8"
+        case .ironSkip: return "#505868"
+        case .moonPebble: return "#C8D8F0"
+        case .heartRock: return "#E898A8"
+        }
+    }
+
+    var strokeHex: String {
+        switch self {
+        case .smoothStone: return "#8C8C8C"
+        case .slateSkipper: return "#404858"
+        case .sunstone: return "#B87830"
+        case .lakeGlass: return "#48A8C8"
+        case .ironSkip: return "#303848"
+        case .moonPebble: return "#8898B8"
+        case .heartRock: return "#C86878"
+        }
+    }
+
+    func runModifiers() -> StoneRunModifiers {
+        var mods = StoneRunModifiers()
+        switch self {
+        case .smoothStone:
+            break
+        case .slateSkipper:
+            mods.skipRetentionBonus = 0.02
+        case .sunstone:
+            mods.launchPowerBonus = 0.03
+        case .lakeGlass:
+            mods.skipAngleBonus = 0.04
+        case .ironSkip:
+            mods.extraBoostCharges = 1
+        case .moonPebble:
+            mods.comboWindowBonus = 0.12
+        case .heartRock:
+            mods.pearlRippleBonus = 1
+        }
+        return mods
+    }
+}
+
+struct StoneRunModifiers {
+    var launchPowerBonus: CGFloat = 0
+    var skipRetentionBonus: CGFloat = 0
+    var skipAngleBonus: CGFloat = 0
+    var extraBoostCharges: Int = 0
+    var comboWindowBonus: TimeInterval = 0
+    var pearlRippleBonus: Int = 0
+}
+
+enum PebbleOutfitKind: String, CaseIterable, Identifiable {
+    case defaultHood
+    case rainSlicker
+    case cozyScarf
+    case starryCloak
+    case arcticWrap
+    case emberVest
+
+    var id: String { rawValue }
+
+    var category: ShopCategory { .outfits }
+
+    var title: String {
+        switch self {
+        case .defaultHood: return "Dock Hoodie"
+        case .rainSlicker: return "Rain Slicker"
+        case .cozyScarf: return "Cozy Scarf"
+        case .starryCloak: return "Starry Cloak"
+        case .arcticWrap: return "Arctic Wrap"
+        case .emberVest: return "Ember Vest"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .defaultHood: return "Classic dock look — always cozy"
+        case .rainSlicker: return "Bright yellow for misty mornings"
+        case .cozyScarf: return "Warm red scarf for chilly throws"
+        case .starryCloak: return "Purple cloak for twilight runs"
+        case .arcticWrap: return "Frost-blue wrap for deep lakes"
+        case .emberVest: return "Ember-orange vest for the deep run"
+        }
+    }
+
+    var unlockDistanceMeters: Double {
+        switch self {
+        case .defaultHood: return 0
+        case .rainSlicker: return 0
+        case .cozyScarf: return 200
+        case .starryCloak: return 1_000
+        case .arcticWrap: return 3_000
+        case .emberVest: return 5_000
+        }
+    }
+
+    var cost: Int {
+        switch self {
+        case .defaultHood: return 0
+        case .rainSlicker: return 40
+        case .cozyScarf: return 50
+        case .starryCloak: return 70
+        case .arcticWrap: return 85
+        case .emberVest: return 95
+        }
+    }
+
+    var isDefaultOwned: Bool {
+        self == .defaultHood
+    }
+
+    var bodyHex: String {
+        switch self {
+        case .defaultHood: return "#3A4858"
+        case .rainSlicker: return "#C8A830"
+        case .cozyScarf: return "#3A4858"
+        case .starryCloak: return "#4A3868"
+        case .arcticWrap: return "#5888A8"
+        case .emberVest: return "#884838"
+        }
+    }
+
+    var hoodHex: String {
+        switch self {
+        case .defaultHood: return "#4A5868"
+        case .rainSlicker: return "#E8C840"
+        case .cozyScarf: return "#4A5868"
+        case .starryCloak: return "#6858A0"
+        case .arcticWrap: return "#78A8C8"
+        case .emberVest: return "#A85840"
+        }
+    }
+
+    var accentHex: String? {
+        switch self {
+        case .cozyScarf: return "#D84848"
+        case .starryCloak: return "#FFD878"
+        default: return nil
         }
     }
 }
@@ -270,6 +517,11 @@ struct RunItemModifiers {
     var boostCooldownMultiplier: CGFloat = 1
     var mistVeilActive = false
     var mistVeilDistanceRemaining: Double = 0
+
+    var pearlSpawnMultiplier: Double = 1
+    var deepCurrentExtraBoost = false
+    var secondWindActive = false
+    var rippleEarnMultiplier: Double = 1
 
     mutating func apply(_ item: ShopItemKind) {
         switch item {
@@ -298,12 +550,24 @@ struct RunItemModifiers {
         case .mistVeil:
             mistVeilActive = true
             mistVeilDistanceRemaining = 800
+        case .glassSkim:
+            extraSkipForgiveness += 0.06
+        case .pearlTide:
+            pearlSpawnMultiplier = 1.4
+        case .deepCurrent:
+            deepCurrentExtraBoost = true
+        case .secondWind:
+            secondWindActive = true
+        case .skippersLuck:
+            rippleEarnMultiplier = 1.15
         }
     }
 }
 
 enum LoadoutSlots {
     static func maxSlots(bestDistance: Double) -> Int {
-        bestDistance >= 500 ? 2 : 1
+        if bestDistance >= 1_500 { return 3 }
+        if bestDistance >= 500 { return 2 }
+        return 1
     }
 }

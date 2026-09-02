@@ -5,6 +5,7 @@ final class PebbleNode: SKNode {
     private let hood = SKShapeNode()
     private let arm = SKShapeNode()
     private let stone = SKShapeNode(ellipseOf: CGSize(width: 14, height: 10))
+    private var accentNode: SKShapeNode?
 
     override init() {
         super.init()
@@ -38,6 +39,26 @@ final class PebbleNode: SKNode {
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func applyOutfit(_ outfit: PebbleOutfitKind) {
+        body.fillColor = SKColor.hex(outfit.bodyHex)
+        body.strokeColor = SKColor.hex(outfit.bodyHex, alpha: 0.7)
+        hood.fillColor = SKColor.hex(outfit.hoodHex)
+        arm.fillColor = SKColor.hex(outfit.bodyHex)
+
+        accentNode?.removeFromParent()
+        accentNode = nil
+
+        if let accentHex = outfit.accentHex {
+            let accent = SKShapeNode(rectOf: CGSize(width: 16, height: 4), cornerRadius: 2)
+            accent.fillColor = SKColor.hex(accentHex)
+            accent.strokeColor = .clear
+            accent.position = CGPoint(x: -2, y: 24)
+            accent.zRotation = 0.15
+            addChild(accent)
+            accentNode = accent
+        }
     }
 
     func playIdle(on dockPosition: CGPoint) {

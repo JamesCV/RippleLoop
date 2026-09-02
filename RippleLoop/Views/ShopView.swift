@@ -20,14 +20,25 @@ struct ShopView: View {
 
                 ScrollView {
                     VStack(spacing: 14) {
-                        if category == .skills {
+                        switch category {
+                        case .skills:
                             ForEach(SkillTree.allCases) { tree in
                                 skillTreeSection(tree)
                             }
-                        } else {
+                        case .items:
                             loadoutBanner
                             ForEach(ShopItemKind.allCases) { item in
                                 itemRow(item)
+                            }
+                        case .stones:
+                            equippedStoneBanner
+                            ForEach(StoneKind.allCases) { stone in
+                                stoneRow(stone)
+                            }
+                        case .outfits:
+                            equippedOutfitBanner
+                            ForEach(PebbleOutfitKind.allCases) { outfit in
+                                outfitRow(outfit)
                             }
                         }
                     }
@@ -64,25 +75,27 @@ struct ShopView: View {
     }
 
     private var categoryPicker: some View {
-        HStack(spacing: 8) {
-            ForEach(ShopCategory.allCases) { tab in
-                Button {
-                    category = tab
-                    HapticManager.menuTap()
-                } label: {
-                    Text(tab.title)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            category == tab ? Color(hex: "#9BE7A8") : Color.white.opacity(0.12),
-                            in: Capsule()
-                        )
-                        .foregroundStyle(category == tab ? Color(hex: "#2A3848") : .white)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(ShopCategory.allCases) { tab in
+                    Button {
+                        category = tab
+                        HapticManager.menuTap()
+                    } label: {
+                        Text(tab.title)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                category == tab ? Color(hex: "#9BE7A8") : Color.white.opacity(0.12),
+                                in: Capsule()
+                            )
+                            .foregroundStyle(category == tab ? Color(hex: "#2A3848") : .white)
+                    }
                 }
             }
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 20)
         .padding(.bottom, 14)
     }
 
@@ -103,8 +116,8 @@ struct ShopView: View {
                 }
             }
 
-            if progress.maxLoadoutSlots < 2 {
-                Text("Reach 500m to unlock a second loadout slot")
+            if progress.maxLoadoutSlots < 3 {
+                Text(loadoutUnlockHint)
                     .font(.system(size: 12, weight: .regular, design: .rounded))
                     .foregroundStyle(.white.opacity(0.55))
             }
@@ -229,15 +242,12 @@ struct ShopView: View {
                         Text(item.title)
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
-                        Text(item.tier == .common ? "Common" : "Uncommon")
+                        Text(item.tier.label)
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(
-                                item.tier == .common ? Color.white.opacity(0.15) : Color(hex: "#9BE7A8").opacity(0.35),
-                                in: Capsule()
-                            )
-                            .foregroundStyle(item.tier == .common ? .white.opacity(0.75) : Color(hex: "#9BE7A8"))
+                            .background(tierBadgeColor(item.tier).opacity(0.35), in: Capsule())
+                            .foregroundStyle(tierBadgeColor(item.tier))
                     }
                     Text(item.description)
                         .font(.system(size: 13, weight: .regular, design: .rounded))
@@ -294,6 +304,167 @@ struct ShopView: View {
         }
         .disabled(!enabled)
     }
+
+    private var loadoutUnlockHint: String {
+        if progress.bestDistance < 500 {
+            return "Reach 500m to unlock a second loadout slot"
+        }
+        return "Reach 1500m to unlock a third loadout slot"
+    }
+
+    private var equippedStoneBanner: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Equipped stone")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.65))
+                Text(progress.equippedStone.title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#FFD878"))
+            }
+            Spacer()
+            Circle()
+                .fill(Color(hex: progress.equippedStone.fillHex))
+                .frame(width: 28, height: 28)
+                .overlay(Circle().stroke(Color(hex: progress.equippedStone.strokeHex), lineWidth: 2))
+        }
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var equippedOutfitBanner: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Pebble outfit")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.65))
+                Text(progress.equippedOutfit.title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#FFD878"))
+            }
+            Spacer()
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color(hex: progress.equippedOutfit.hoodHex))
+                .frame(width: 22, height: 28)
+        }
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func stoneRow(_ stone: StoneKind) -> some View {
+        let owned = progress.ownsStone(stone)
+        let equipped = progress.equippedStone == stone
+        let unlocked = progress.bestDistance >= stone.unlockDistanceMeters
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Circle()
+                    .fill(Color(hex: stone.fillHex))
+                    .frame(width: 36, height: 36)
+                    .overlay(Circle().stroke(Color(hex: stone.strokeHex), lineWidth: 2))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(stone.title)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(unlocked ? .white : .white.opacity(0.45))
+                    Text(stone.description)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(unlocked ? 0.65 : 0.4))
+                }
+                Spacer()
+                if owned {
+                    Text(equipped ? "Equipped" : "Owned")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#9BE7A8"))
+                }
+            }
+
+            if !unlocked {
+                Text("\(Int(stone.unlockDistanceMeters))m to unlock")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            } else if owned {
+                if !equipped {
+                    purchaseButton(title: "Equip", enabled: true) {
+                        PlayerProgress.shared.equipStone(stone)
+                        progress.refresh()
+                        session.showToast("Equipped \(stone.title)")
+                    }
+                }
+            } else if stone.cost > 0 {
+                purchaseButton(title: "\(stone.cost) Ripples", enabled: progress.ripples >= stone.cost) {
+                    if PlayerProgress.shared.purchaseStone(stone) {
+                        PlayerProgress.shared.equipStone(stone)
+                        progress.refresh()
+                        session.showToast("Unlocked \(stone.title)")
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(unlocked ? 0.08 : 0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func outfitRow(_ outfit: PebbleOutfitKind) -> some View {
+        let owned = progress.ownsOutfit(outfit)
+        let equipped = progress.equippedOutfit == outfit
+        let unlocked = progress.bestDistance >= outfit.unlockDistanceMeters
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color(hex: outfit.hoodHex))
+                    .frame(width: 28, height: 36)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(outfit.title)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(unlocked ? .white : .white.opacity(0.45))
+                    Text(outfit.description)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(unlocked ? 0.65 : 0.4))
+                }
+                Spacer()
+                if owned {
+                    Text(equipped ? "Equipped" : "Owned")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#9BE7A8"))
+                }
+            }
+
+            if !unlocked {
+                Text("\(Int(outfit.unlockDistanceMeters))m to unlock")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            } else if owned {
+                if !equipped {
+                    purchaseButton(title: "Equip", enabled: true) {
+                        PlayerProgress.shared.equipOutfit(outfit)
+                        progress.refresh()
+                        session.showToast("Equipped \(outfit.title)")
+                    }
+                }
+            } else if outfit.cost > 0 {
+                purchaseButton(title: "\(outfit.cost) Ripples", enabled: progress.ripples >= outfit.cost) {
+                    if PlayerProgress.shared.purchaseOutfit(outfit) {
+                        PlayerProgress.shared.equipOutfit(outfit)
+                        progress.refresh()
+                        session.showToast("Unlocked \(outfit.title)")
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(unlocked ? 0.08 : 0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func tierBadgeColor(_ tier: ItemTier) -> Color {
+        switch tier {
+        case .common: return .white.opacity(0.75)
+        case .uncommon: return Color(hex: "#9BE7A8")
+        case .rare: return Color(hex: "#FFD878")
+        }
+    }
 }
 
 @MainActor
@@ -302,12 +473,16 @@ final class ShopProgressObserver: ObservableObject {
     @Published var equippedItems: [ShopItemKind?] = PlayerProgress.shared.equippedItemsForNextRun
     @Published var maxLoadoutSlots = PlayerProgress.shared.maxLoadoutSlots
     @Published var bestDistance = PlayerProgress.shared.bestDistanceMeters
+    @Published var equippedStone = PlayerProgress.shared.equippedStone
+    @Published var equippedOutfit = PlayerProgress.shared.equippedOutfit
 
     func refresh() {
         ripples = PlayerProgress.shared.ripples
         equippedItems = PlayerProgress.shared.equippedItemsForNextRun
         maxLoadoutSlots = PlayerProgress.shared.maxLoadoutSlots
         bestDistance = PlayerProgress.shared.bestDistanceMeters
+        equippedStone = PlayerProgress.shared.equippedStone
+        equippedOutfit = PlayerProgress.shared.equippedOutfit
     }
 
     func level(for upgrade: UpgradeKind) -> Int {
@@ -330,5 +505,13 @@ final class ShopProgressObserver: ObservableObject {
         equippedItems.enumerated().compactMap { index, equipped in
             equipped == item ? index : nil
         }
+    }
+
+    func ownsStone(_ stone: StoneKind) -> Bool {
+        PlayerProgress.shared.ownsStone(stone)
+    }
+
+    func ownsOutfit(_ outfit: PebbleOutfitKind) -> Bool {
+        PlayerProgress.shared.ownsOutfit(outfit)
     }
 }

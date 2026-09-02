@@ -17,6 +17,10 @@ final class PlayerProgress {
         static let itemPrefix = "ripplerun.item."
         static let equippedItem = "ripplerun.equippedItem"
         static let equippedItems = "ripplerun.equippedItems"
+        static let stonePrefix = "ripplerun.stone."
+        static let equippedStone = "ripplerun.equippedStone"
+        static let outfitPrefix = "ripplerun.outfit."
+        static let equippedOutfit = "ripplerun.equippedOutfit"
     }
 
     var bestDistanceMeters: Double {
@@ -51,6 +55,38 @@ final class PlayerProgress {
 
     var maxLoadoutSlots: Int {
         LoadoutSlots.maxSlots(bestDistance: bestDistanceMeters)
+    }
+
+    var equippedStone: StoneKind {
+        get {
+            guard let raw = defaults.string(forKey: Key.equippedStone),
+                  let stone = StoneKind(rawValue: raw) else {
+                return .smoothStone
+            }
+            return ownsStone(stone) ? stone : .smoothStone
+        }
+        set {
+            guard ownsStone(newValue) else { return }
+            defaults.set(newValue.rawValue, forKey: Key.equippedStone)
+        }
+    }
+
+    var equippedOutfit: PebbleOutfitKind {
+        get {
+            guard let raw = defaults.string(forKey: Key.equippedOutfit),
+                  let outfit = PebbleOutfitKind(rawValue: raw) else {
+                return .defaultHood
+            }
+            return ownsOutfit(outfit) ? outfit : .defaultHood
+        }
+        set {
+            guard ownsOutfit(newValue) else { return }
+            defaults.set(newValue.rawValue, forKey: Key.equippedOutfit)
+        }
+    }
+
+    var stoneRunModifiers: StoneRunModifiers {
+        equippedStone.runModifiers()
     }
 
     var equippedItemsForNextRun: [ShopItemKind?] {
@@ -175,6 +211,46 @@ final class PlayerProgress {
         return true
     }
 
+    func ownsStone(_ stone: StoneKind) -> Bool {
+        if stone.isDefaultOwned { return true }
+        return defaults.bool(forKey: Key.stonePrefix + stone.rawValue)
+    }
+
+    func purchaseStone(_ stone: StoneKind) -> Bool {
+        guard stone != .smoothStone else { return false }
+        guard bestDistanceMeters >= stone.unlockDistanceMeters else { return false }
+        guard !ownsStone(stone) else { return false }
+        guard ripples >= stone.cost else { return false }
+        ripples -= stone.cost
+        defaults.set(true, forKey: Key.stonePrefix + stone.rawValue)
+        return true
+    }
+
+    func equipStone(_ stone: StoneKind) {
+        guard ownsStone(stone) else { return }
+        equippedStone = stone
+    }
+
+    func ownsOutfit(_ outfit: PebbleOutfitKind) -> Bool {
+        if outfit.isDefaultOwned { return true }
+        return defaults.bool(forKey: Key.outfitPrefix + outfit.rawValue)
+    }
+
+    func purchaseOutfit(_ outfit: PebbleOutfitKind) -> Bool {
+        guard outfit != .defaultHood else { return false }
+        guard bestDistanceMeters >= outfit.unlockDistanceMeters else { return false }
+        guard !ownsOutfit(outfit) else { return false }
+        guard ripples >= outfit.cost else { return false }
+        ripples -= outfit.cost
+        defaults.set(true, forKey: Key.outfitPrefix + outfit.rawValue)
+        return true
+    }
+
+    func equipOutfit(_ outfit: PebbleOutfitKind) {
+        guard ownsOutfit(outfit) else { return }
+        equippedOutfit = outfit
+    }
+
     func equippedItem(in slot: Int) -> ShopItemKind? {
         guard slot >= 0, slot < equippedItemsForNextRun.count else { return nil }
         return equippedItemsForNextRun[slot]
@@ -244,7 +320,9 @@ final class PlayerProgress {
         pearlsCollected: Int,
         comboPeak: Int,
         biome: Biome,
-        pearlRippleMultiplier: Int = 1
+        pearlRippleMultiplier: Int = 1,
+        pearlRippleBonus: Int = 0,
+        rippleEarnMultiplier: Double = 1
     ) -> RunSummary {
         totalRuns += 1
         let previousBest = bestDistanceMeters
@@ -255,9 +333,10 @@ final class PlayerProgress {
 
         let distanceBonus = Int(distanceMeters * 0.4)
         let skipBonus = skipCount * 3
-        let pearlBonus = pearlsCollected * 2 * max(1, pearlRippleMultiplier)
+        let pearlBonus = pearlsCollected * max(1, pearlRippleMultiplier) * (2 + max(0, pearlRippleBonus))
         let comboBonus = comboPeak * 5
-        let earned = max(10, distanceBonus + skipBonus + pearlBonus + comboBonus)
+        let baseEarned = max(10, distanceBonus + skipBonus + pearlBonus + comboBonus)
+        let earned = max(10, Int(Double(baseEarned) * max(1, rippleEarnMultiplier)))
         ripples += earned
 
         return RunSummary(

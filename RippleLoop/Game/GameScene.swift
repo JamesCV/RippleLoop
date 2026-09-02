@@ -45,6 +45,7 @@ final class GameScene: SKScene {
     private var continuesUsed = 0
 
     private var runModifiers = RunItemModifiers()
+    private var stoneModifiers = StoneRunModifiers()
     private var rippleBoostsRemaining = 0
     private var maxRippleBoosts = 0
     private var lastBoostTime: TimeInterval = 0
@@ -72,6 +73,7 @@ final class GameScene: SKScene {
         worldNode.addChild(stoneNode)
 
         pebble.playIdle(on: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY))
+        pebble.applyOutfit(PlayerProgress.shared.equippedOutfit)
         addChild(pebble)
 
         hud.position = CGPoint(x: 0, y: size.height)
@@ -97,6 +99,8 @@ final class GameScene: SKScene {
         PlayerProgress.shared.resetRunState()
         PlayerProgress.shared.grantFTUERipplesIfNeeded()
         runModifiers = PlayerProgress.shared.consumeEquippedItemsIfNeeded()
+        stoneModifiers = PlayerProgress.shared.stoneRunModifiers
+        applyEquippedStoneAppearance()
         resetRun()
         startThrowSequence()
     }
@@ -110,6 +114,10 @@ final class GameScene: SKScene {
         stonePosition.y = max(stonePosition.y, GameConstants.waterSurfaceY + 40)
         inAirSegment = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+        if runModifiers.secondWindActive {
+            rippleBoostsRemaining = maxRippleBoosts
+            updateBoostHUD()
+        }
         let ripple = RippleEffect(at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY), strength: 1.2, twin: true)
         worldNode.addChild(ripple)
         hud.setHint("Hold to rise · tap BOOST for speed")
@@ -176,6 +184,7 @@ final class GameScene: SKScene {
         phase = .throwing
         aimOverlay.isHidden = true
         hud.setHint("Pebble prepares to throw…")
+        pebble.applyOutfit(PlayerProgress.shared.equippedOutfit)
         pebble.playIdle(on: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY))
         pebble.playThrow(from: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY)) { [weak self] in
             self?.enterAiming()
@@ -188,7 +197,7 @@ final class GameScene: SKScene {
         let progress = PlayerProgress.shared
         aimOverlay.configureArcPreview(
             steps: progress.angleArcPreviewSteps,
-            launchPowerBonus: progress.launchPowerBonus
+            launchPowerBonus: progress.launchPowerBonus + stoneModifiers.launchPowerBonus
         )
         hud.setHint("Swipe to aim · Pebble throws")
     }
@@ -201,7 +210,7 @@ final class GameScene: SKScene {
         stoneVelocity = StonePhysics.launchVelocity(
             power: aimOverlay.swipePower,
             angleRadians: aimOverlay.launchAngle,
-            powerBonus: PlayerProgress.shared.launchPowerBonus
+            powerBonus: PlayerProgress.shared.launchPowerBonus + stoneModifiers.launchPowerBonus
         )
         stoneVelocity.dx *= runModifiers.launchSpeedMultiplier
         stoneVelocity.dy *= runModifiers.launchSpeedMultiplier
@@ -295,6 +304,9 @@ final class GameScene: SKScene {
                     runModifiers.currentRiderRemaining -= 1
                     rippleBoostsRemaining = min(rippleBoostsRemaining + 2, maxRippleBoosts + 4)
                 }
+                if runModifiers.deepCurrentExtraBoost {
+                    rippleBoostsRemaining = min(rippleBoostsRemaining + 1, maxRippleBoosts + 4)
+                }
                 HapticManager.doubleBounce()
                 SoundManager.shared.playBoost()
             }
@@ -304,7 +316,7 @@ final class GameScene: SKScene {
         if stonePosition.y <= GameConstants.waterSurfaceY && stoneVelocity.dy < 0 {
             inAirSegment = false
             let progress = PlayerProgress.shared
-            var retentionBonus = progress.skipSpeedRetentionBonus
+            var retentionBonus = progress.skipSpeedRetentionBonus + stoneModifiers.skipRetentionBonus
             if isFirstSkipOfRun {
                 retentionBonus += progress.dockFootingRetentionBonus
             }
@@ -312,7 +324,7 @@ final class GameScene: SKScene {
             let didSkip = StonePhysics.attemptSkip(
                 velocity: &stoneVelocity,
                 at: &stonePosition,
-                angleBonus: progress.skipAngleBonus + runModifiers.extraSkipForgiveness,
+                angleBonus: progress.skipAngleBonus + runModifiers.extraSkipForgiveness + stoneModifiers.skipAngleBonus,
                 retentionBonus: retentionBonus,
                 minSpeedReduction: progress.deepSkimMinSpeedReduction
             )
@@ -434,7 +446,9 @@ final class GameScene: SKScene {
             pearlsCollected: pearlsCollected,
             comboPeak: comboPeak,
             biome: currentBiome,
-            pearlRippleMultiplier: runModifiers.pearlRippleMultiplier
+            pearlRippleMultiplier: runModifiers.pearlRippleMultiplier,
+            pearlRippleBonus: stoneModifiers.pearlRippleBonus,
+            rippleEarnMultiplier: runModifiers.rippleEarnMultiplier
         )
         host?.gameSceneDidFinish(summary)
     }
@@ -472,7 +486,7 @@ final class GameScene: SKScene {
     }
 
     private func registerSkip(at time: TimeInterval) {
-        let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus
+        let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus + stoneModifiers.comboWindowBonus
         if time - lastSkipTime <= comboWindow {
             comboMultiplier = min(comboMultiplier + 1, 10)
         } else {
@@ -535,12 +549,18 @@ final class GameScene: SKScene {
 
         worldSpawner.configure(
             WorldSpawnConfig(
-                pearlSpawnMultiplier: finderBonus,
+                pearlSpawnMultiplier: finderBonus * runModifiers.pearlSpawnMultiplier,
                 currentSpawnMultiplier: finderBonus,
                 logSpawnMultiplier: logSpawnMultiplier,
                 logDriftSpeedMultiplier: runModifiers.logSpeedMultiplier
             )
         )
+    }
+
+    private func applyEquippedStoneAppearance() {
+        let stone = PlayerProgress.shared.equippedStone
+        stoneNode.fillColor = SKColor.hex(stone.fillHex)
+        stoneNode.strokeColor = SKColor.hex(stone.strokeHex, alpha: 0.85)
     }
 
     private func resetRun() {
@@ -562,7 +582,7 @@ final class GameScene: SKScene {
         stoneNode.alpha = 1
         inAirSegment = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
-        maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges
+        maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges + stoneModifiers.extraBoostCharges
         rippleBoostsRemaining = maxRippleBoosts
         lastBoostTime = 0
         lastSkipTime = 0
@@ -577,6 +597,7 @@ final class GameScene: SKScene {
         insertChild(backgroundRoot, at: 0)
 
         stoneNode.position = stonePosition
+        applyEquippedStoneAppearance()
         aimOverlay.resetSwipe()
         aimOverlay.isHidden = true
         hud.updateCombo(comboMultiplier)

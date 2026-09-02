@@ -106,19 +106,28 @@ struct DockMenuView: View {
     }
 
     private var pebbleSilhouette: some View {
-        ZStack {
+        let outfit = progress.equippedOutfit
+        return ZStack {
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color(hex: "#3A4858"))
+                .fill(Color(hex: outfit.bodyHex))
                 .frame(width: 22, height: 32)
                 .offset(y: 8)
 
             Ellipse()
-                .fill(Color(hex: "#4A5868"))
+                .fill(Color(hex: outfit.hoodHex))
                 .frame(width: 30, height: 18)
                 .offset(y: -10)
 
+            if let accentHex = outfit.accentHex {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color(hex: accentHex))
+                    .frame(width: 16, height: 4)
+                    .offset(x: -2, y: -2)
+                    .rotationEffect(.degrees(12))
+            }
+
             Ellipse()
-                .fill(Color.white.opacity(0.85))
+                .fill(Color(hex: progress.equippedStone.fillHex))
                 .frame(width: 14, height: 10)
                 .offset(x: 12, y: 2)
                 .rotationEffect(.degrees(-20))
