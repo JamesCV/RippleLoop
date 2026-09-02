@@ -57,6 +57,8 @@ Sign in with a Game Center sandbox account on device/simulator to test.
 
 **Items** (equip one for next run): Surge Pack (+2 boosts), Tailwind Draught (+25% launch), Glide Charm (forgiving skips), Momentum Seed (big first-skip surge)
 
+## Sound & Haptics
+
 Procedural skip tones (pitch rises with combo) and UIKit haptics on skips, bounces, pearls, biome shifts, and new bests. Toggle both in **Settings** on the dock.
 
 ## Project Structure
