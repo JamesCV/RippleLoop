@@ -16,6 +16,7 @@ final class PlayerProgress {
         static let upgradePrefix = "ripplerun.upgrade."
         static let itemPrefix = "ripplerun.item."
         static let equippedItem = "ripplerun.equippedItem"
+        static let equippedItems = "ripplerun.equippedItems"
     }
 
     var bestDistanceMeters: Double {
@@ -48,29 +49,56 @@ final class PlayerProgress {
         set { defaults.set(newValue, forKey: Key.adContinueUsedThisRun) }
     }
 
-    var equippedItemForNextRun: ShopItemKind? {
+    var maxLoadoutSlots: Int {
+        LoadoutSlots.maxSlots(bestDistance: bestDistanceMeters)
+    }
+
+    var equippedItemsForNextRun: [ShopItemKind?] {
         get {
-            guard let raw = defaults.string(forKey: Key.equippedItem) else { return nil }
-            return ShopItemKind(rawValue: raw)
+            migrateLegacyEquippedItemIfNeeded()
+            let stored = defaults.stringArray(forKey: Key.equippedItems) ?? []
+            var slots = stored.map { ShopItemKind(rawValue: $0) }
+            while slots.count < maxLoadoutSlots {
+                slots.append(nil)
+            }
+            return Array(slots.prefix(maxLoadoutSlots))
         }
         set {
-            if let newValue {
-                defaults.set(newValue.rawValue, forKey: Key.equippedItem)
+            let raw = newValue.prefix(maxLoadoutSlots).map { $0?.rawValue ?? "" }
+            defaults.set(raw, forKey: Key.equippedItems)
+        }
+    }
+
+    @available(*, deprecated, message: "Use equippedItemsForNextRun")
+    var equippedItemForNextRun: ShopItemKind? {
+        get { equippedItemsForNextRun.first ?? nil }
+        set {
+            var slots = equippedItemsForNextRun
+            if slots.isEmpty {
+                slots = [newValue]
             } else {
-                defaults.removeObject(forKey: Key.equippedItem)
+                slots[0] = newValue
             }
+            equippedItemsForNextRun = slots
         }
     }
 
     var launchPowerLevel: Int { level(for: .launchPower) }
+    var angleSenseLevel: Int { level(for: .angleSense) }
+    var dockFootingLevel: Int { level(for: .dockFooting) }
     var skipForgivenessLevel: Int { level(for: .skipForgiveness) }
+    var speedRetentionLevel: Int { level(for: .speedRetention) }
+    var deepSkimLevel: Int { level(for: .deepSkim) }
+    var rippleRhythmLevel: Int { level(for: .rippleRhythm) }
+    var comboMomentumLevel: Int { level(for: .comboMomentum) }
     var doubleBounceStaminaLevel: Int { level(for: .doubleBounceStamina) }
     var bounceFloatLevel: Int { level(for: .bounceFloat) }
-    var pearlMagnetLevel: Int { level(for: .pearlMagnet) }
+    var holdLiftLevel: Int { level(for: .holdLift) }
     var rippleBoostCapacityLevel: Int { level(for: .rippleBoostCapacity) }
     var rippleBoostPowerLevel: Int { level(for: .rippleBoostPower) }
-    var speedRetentionLevel: Int { level(for: .speedRetention) }
-    var comboMomentumLevel: Int { level(for: .comboMomentum) }
+    var overdriveLevel: Int { level(for: .overdrive) }
+    var pearlMagnetLevel: Int { level(for: .pearlMagnet) }
+    var rippleFinderLevel: Int { level(for: .rippleFinder) }
 
     var launchPowerBonus: CGFloat { CGFloat(launchPowerLevel) * 0.06 }
     var skipAngleBonus: CGFloat { CGFloat(skipForgivenessLevel) * 0.04 }
@@ -82,6 +110,14 @@ final class PlayerProgress {
     var rippleBoostStrength: CGFloat { 1.0 + CGFloat(rippleBoostPowerLevel) * 0.12 }
     var skipSpeedRetentionBonus: CGFloat { CGFloat(speedRetentionLevel) * 0.012 }
     var comboMomentumFactor: CGFloat { CGFloat(comboMomentumLevel) * 0.018 }
+
+    var angleArcPreviewSteps: Int { 4 + angleSenseLevel * 3 }
+    var dockFootingRetentionBonus: CGFloat { CGFloat(dockFootingLevel) * 0.018 }
+    var deepSkimMinSpeedReduction: CGFloat { CGFloat(deepSkimLevel) * 6 }
+    var comboWindowBonus: TimeInterval { TimeInterval(rippleRhythmLevel) * 0.18 }
+    var holdLiftMultiplier: CGFloat { 1 + CGFloat(holdLiftLevel) * 0.1 }
+    var overdriveCooldownBonus: CGFloat { CGFloat(overdriveLevel) * 0.08 }
+    var rippleFinderSpawnBonus: CGFloat { CGFloat(rippleFinderLevel) * 0.05 }
 
     var continuePebbleCost: Int { 5 }
 
@@ -101,6 +137,10 @@ final class PlayerProgress {
         defaults.set(Date(), forKey: Key.dailyFreeContinueDate)
     }
 
+    func isSkillTreeUnlocked(_ tree: SkillTree) -> Bool {
+        bestDistanceMeters >= tree.unlockDistanceMeters
+    }
+
     func level(for upgrade: UpgradeKind) -> Int {
         max(0, min(defaults.integer(forKey: Key.upgradePrefix + upgrade.rawValue), upgrade.maxLevel))
     }
@@ -118,6 +158,7 @@ final class PlayerProgress {
     }
 
     func purchaseUpgrade(_ upgrade: UpgradeKind) -> Bool {
+        guard isSkillTreeUnlocked(upgrade.tree) else { return false }
         let current = level(for: upgrade)
         guard current < upgrade.maxLevel else { return false }
         let cost = upgrade.cost(forLevel: current)
@@ -134,36 +175,56 @@ final class PlayerProgress {
         return true
     }
 
-    func equipItem(_ item: ShopItemKind?) {
-        guard let item else {
-            equippedItemForNextRun = nil
-            return
-        }
-        guard itemCount(item) > 0 else { return }
-        equippedItemForNextRun = item
+    func equippedItem(in slot: Int) -> ShopItemKind? {
+        guard slot >= 0, slot < equippedItemsForNextRun.count else { return nil }
+        return equippedItemsForNextRun[slot]
     }
 
-    func consumeEquippedItemIfNeeded() -> RunItemModifiers {
+    func equipItem(_ item: ShopItemKind?, slot: Int) {
+        guard slot >= 0, slot < maxLoadoutSlots else { return }
+        if let item, itemCount(item) <= 0 { return }
+
+        var slots = equippedItemsForNextRun
+        while slots.count < maxLoadoutSlots {
+            slots.append(nil)
+        }
+
+        if let item {
+            for index in slots.indices where index != slot && slots[index] == item {
+                slots[index] = nil
+            }
+        }
+
+        slots[slot] = item
+        equippedItemsForNextRun = slots
+    }
+
+    func clearLoadout() {
+        equippedItemsForNextRun = Array(repeating: nil, count: maxLoadoutSlots)
+    }
+
+    func consumeEquippedItemsIfNeeded() -> RunItemModifiers {
         var modifiers = RunItemModifiers()
-        guard let equipped = equippedItemForNextRun else { return modifiers }
-        guard itemCount(equipped) > 0 else {
-            equippedItemForNextRun = nil
-            return modifiers
+        var slots = equippedItemsForNextRun
+        var consumedAny = false
+
+        for index in slots.indices {
+            guard let item = slots[index] else { continue }
+            guard itemCount(item) > 0 else {
+                slots[index] = nil
+                continue
+            }
+
+            setItemCount(itemCount(item) - 1, for: item)
+            modifiers.apply(item)
+            slots[index] = nil
+            consumedAny = true
         }
 
-        setItemCount(itemCount(equipped) - 1, for: equipped)
-        equippedItemForNextRun = nil
-
-        switch equipped {
-        case .surgePack:
-            modifiers.extraBoostCharges = 2
-        case .tailwindDraught:
-            modifiers.launchSpeedMultiplier = 1.25
-        case .glideCharm:
-            modifiers.extraSkipForgiveness = 0.08
-        case .momentumSeed:
-            modifiers.momentumSeedActive = true
+        if consumedAny {
+            equippedItemsForNextRun = slots
         }
+
         return modifiers
     }
 
@@ -182,7 +243,8 @@ final class PlayerProgress {
         skipCount: Int,
         pearlsCollected: Int,
         comboPeak: Int,
-        biome: Biome
+        biome: Biome,
+        pearlRippleMultiplier: Int = 1
     ) -> RunSummary {
         totalRuns += 1
         let previousBest = bestDistanceMeters
@@ -193,7 +255,7 @@ final class PlayerProgress {
 
         let distanceBonus = Int(distanceMeters * 0.4)
         let skipBonus = skipCount * 3
-        let pearlBonus = pearlsCollected * 2
+        let pearlBonus = pearlsCollected * 2 * max(1, pearlRippleMultiplier)
         let comboBonus = comboPeak * 5
         let earned = max(10, distanceBonus + skipBonus + pearlBonus + comboBonus)
         ripples += earned
@@ -214,5 +276,12 @@ final class PlayerProgress {
         guard pebbles >= continuePebbleCost else { return false }
         pebbles -= continuePebbleCost
         return true
+    }
+
+    private func migrateLegacyEquippedItemIfNeeded() {
+        guard defaults.stringArray(forKey: Key.equippedItems) == nil else { return }
+        guard let legacy = defaults.string(forKey: Key.equippedItem), !legacy.isEmpty else { return }
+        defaults.set([legacy], forKey: Key.equippedItems)
+        defaults.removeObject(forKey: Key.equippedItem)
     }
 }

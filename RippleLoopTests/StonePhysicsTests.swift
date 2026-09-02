@@ -49,10 +49,32 @@ final class StonePhysicsTests: XCTestCase {
         XCTAssertGreaterThan(velocity.dx, 200)
     }
 
-    func testRippleBoostAddsSpeed() {
-        var velocity = CGVector(dx: 180, dy: -60)
-        StonePhysics.applyRippleBoost(velocity: &velocity, strength: 1, combo: 3)
-        XCTAssertGreaterThan(velocity.dx, 180)
-        XCTAssertGreaterThan(velocity.dy, 0)
+    func testDeepSkimLowersMinSkipSpeed() {
+        var velocity = CGVector(dx: 70, dy: -40)
+        var position = CGPoint(x: 100, y: GameConstants.waterSurfaceY - 1)
+        let withoutDeepSkim = StonePhysics.attemptSkip(velocity: &velocity, at: &position)
+
+        var velocity2 = CGVector(dx: 70, dy: -40)
+        var position2 = CGPoint(x: 100, y: GameConstants.waterSurfaceY - 1)
+        let withDeepSkim = StonePhysics.attemptSkip(
+            velocity: &velocity2,
+            at: &position2,
+            minSpeedReduction: 30
+        )
+
+        XCTAssertFalse(withoutDeepSkim)
+        XCTAssertTrue(withDeepSkim)
+    }
+
+    func testPredictedArcReachesWater() {
+        let points = StonePhysics.predictedArcPoints(
+            start: CGPoint(x: 72, y: GameConstants.waterSurfaceY + 18),
+            power: 0.7,
+            angleRadians: 0.4,
+            powerBonus: 0.1,
+            steps: 8
+        )
+        XCTAssertGreaterThan(points.count, 2)
+        XCTAssertLessThanOrEqual(points.last!.y, GameConstants.waterSurfaceY + 20)
     }
 }

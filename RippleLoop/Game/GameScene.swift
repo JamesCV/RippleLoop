@@ -32,6 +32,7 @@ final class GameScene: SKScene {
     private var lastSkipTime: TimeInterval = 0
     private var pearlsCollected = 0
     private var lastPearlCount = 0
+    private var isFirstSkipOfRun = true
 
     private var isHoldingBounce = false
     private var doubleBouncesRemaining = 0
@@ -47,6 +48,7 @@ final class GameScene: SKScene {
     private var rippleBoostsRemaining = 0
     private var maxRippleBoosts = 0
     private var lastBoostTime: TimeInterval = 0
+    private var lastMistVeilDistance: Double = 0
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0, y: 0)
@@ -94,7 +96,7 @@ final class GameScene: SKScene {
     func beginRun() {
         PlayerProgress.shared.resetRunState()
         PlayerProgress.shared.grantFTUERipplesIfNeeded()
-        runModifiers = PlayerProgress.shared.consumeEquippedItemIfNeeded()
+        runModifiers = PlayerProgress.shared.consumeEquippedItemsIfNeeded()
         resetRun()
         startThrowSequence()
     }
@@ -183,12 +185,18 @@ final class GameScene: SKScene {
     private func enterAiming() {
         phase = .aiming
         aimOverlay.isHidden = false
+        let progress = PlayerProgress.shared
+        aimOverlay.configureArcPreview(
+            steps: progress.angleArcPreviewSteps,
+            launchPowerBonus: progress.launchPowerBonus
+        )
         hud.setHint("Swipe to aim · Pebble throws")
     }
 
     private func launchStone() {
         phase = .flying
         inAirSegment = true
+        isFirstSkipOfRun = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
         stoneVelocity = StonePhysics.launchVelocity(
             power: aimOverlay.swipePower,
@@ -247,7 +255,11 @@ final class GameScene: SKScene {
         guard deltaTime > 0 else { return }
 
         if isHoldingBounce {
-            StonePhysics.applyBounce(velocity: &stoneVelocity, holding: true)
+            StonePhysics.applyBounce(
+                velocity: &stoneVelocity,
+                holding: true,
+                holdLiftMultiplier: PlayerProgress.shared.holdLiftMultiplier
+            )
         }
 
         let gravityMultiplier = PlayerProgress.shared.bounceFloatFactor
@@ -279,6 +291,10 @@ final class GameScene: SKScene {
             for _ in 0..<currentsCollected {
                 StonePhysics.applySpeedCurrent(velocity: &stoneVelocity)
                 rippleBoostsRemaining = min(rippleBoostsRemaining + 1, maxRippleBoosts + 2)
+                if runModifiers.currentRiderRemaining > 0 {
+                    runModifiers.currentRiderRemaining -= 1
+                    rippleBoostsRemaining = min(rippleBoostsRemaining + 2, maxRippleBoosts + 4)
+                }
                 HapticManager.doubleBounce()
                 SoundManager.shared.playBoost()
             }
@@ -288,19 +304,39 @@ final class GameScene: SKScene {
         if stonePosition.y <= GameConstants.waterSurfaceY && stoneVelocity.dy < 0 {
             inAirSegment = false
             let progress = PlayerProgress.shared
-            if StonePhysics.attemptSkip(
+            var retentionBonus = progress.skipSpeedRetentionBonus
+            if isFirstSkipOfRun {
+                retentionBonus += progress.dockFootingRetentionBonus
+            }
+
+            let didSkip = StonePhysics.attemptSkip(
                 velocity: &stoneVelocity,
                 at: &stonePosition,
                 angleBonus: progress.skipAngleBonus + runModifiers.extraSkipForgiveness,
-                retentionBonus: progress.skipSpeedRetentionBonus
-            ) {
+                retentionBonus: retentionBonus,
+                minSpeedReduction: progress.deepSkimMinSpeedReduction
+            )
+
+            if didSkip {
                 skipCount += 1
+                isFirstSkipOfRun = false
                 registerSkip(at: currentTime)
                 inAirSegment = true
                 doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
                 let ripple = RippleEffect(
                     at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
                     strength: StonePhysics.speed(stoneVelocity) / 400
+                )
+                worldNode.addChild(ripple)
+            } else if attemptSoftLandingRecovery() {
+                skipCount += 1
+                isFirstSkipOfRun = false
+                registerSkip(at: currentTime)
+                inAirSegment = true
+                doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+                let ripple = RippleEffect(
+                    at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
+                    strength: 0.7
                 )
                 worldNode.addChild(ripple)
             } else {
@@ -314,13 +350,29 @@ final class GameScene: SKScene {
 
         stoneNode.position = stonePosition
         updateCamera()
+        updateMistVeilProgress()
         updateBiomeIfNeeded()
+        updateSpawnConfig()
         worldSpawner.update(stoneX: stonePosition.x, distanceMeters: distanceMeters)
         updateBounceHUD()
     }
 
     private enum SinkReason {
         case failedSkip, obstacle, outOfBounds
+    }
+
+    private func attemptSoftLandingRecovery() -> Bool {
+        guard runModifiers.softLandingAvailable, !runModifiers.softLandingUsed else { return false }
+        runModifiers.softLandingUsed = true
+
+        let progress = PlayerProgress.shared
+        stoneVelocity.dy = abs(stoneVelocity.dy) * 0.55
+        stoneVelocity.dx *= 0.92 + progress.skipSpeedRetentionBonus
+        stonePosition.y = GameConstants.waterSurfaceY + 2
+        hud.flashCombo()
+        HapticManager.skip(combo: comboMultiplier)
+        SoundManager.shared.playSkip(combo: comboMultiplier)
+        return stoneVelocity.dx > 60
     }
 
     private func beginSinking(at time: TimeInterval, reason: SinkReason) {
@@ -381,7 +433,8 @@ final class GameScene: SKScene {
             skipCount: skipCount,
             pearlsCollected: pearlsCollected,
             comboPeak: comboPeak,
-            biome: currentBiome
+            biome: currentBiome,
+            pearlRippleMultiplier: runModifiers.pearlRippleMultiplier
         )
         host?.gameSceneDidFinish(summary)
     }
@@ -389,11 +442,18 @@ final class GameScene: SKScene {
     private func useRippleBoost() {
         guard phase == .flying else { return }
         guard rippleBoostsRemaining > 0 else { return }
-        guard CACurrentMediaTime() - lastBoostTime >= GameConstants.rippleBoostCooldown else { return }
+
+        let now = CACurrentMediaTime()
+        let progress = PlayerProgress.shared
+        var cooldown = GameConstants.rippleBoostCooldown * runModifiers.boostCooldownMultiplier
+        let speed = StonePhysics.speed(stoneVelocity) * GameConstants.metersPerPoint * 60
+        if speed < 180 {
+            cooldown *= max(0.35, 1 - progress.overdriveCooldownBonus)
+        }
+        guard now - lastBoostTime >= cooldown else { return }
 
         rippleBoostsRemaining -= 1
-        lastBoostTime = CACurrentMediaTime()
-        let progress = PlayerProgress.shared
+        lastBoostTime = now
         StonePhysics.applyRippleBoost(
             velocity: &stoneVelocity,
             strength: progress.rippleBoostStrength,
@@ -412,7 +472,8 @@ final class GameScene: SKScene {
     }
 
     private func registerSkip(at time: TimeInterval) {
-        if time - lastSkipTime <= GameConstants.comboWindowSeconds {
+        let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus
+        if time - lastSkipTime <= comboWindow {
             comboMultiplier = min(comboMultiplier + 1, 10)
         } else {
             comboMultiplier = 1
@@ -442,7 +503,8 @@ final class GameScene: SKScene {
     }
 
     private func updateBiomeIfNeeded() {
-        let biome = Biome.forDistance(distanceMeters)
+        let goldenHourExtension = runModifiers.morningDewActive ? 200.0 : 0
+        let biome = Biome.forDistance(distanceMeters, goldenHourExtensionMeters: goldenHourExtension)
         guard biome != currentBiome else { return }
         currentBiome = biome
         ParallaxBackground.applyBiome(biome, to: backgroundRoot, sceneSize: size)
@@ -452,6 +514,35 @@ final class GameScene: SKScene {
         SoundManager.shared.playBiomeShift()
     }
 
+    private func updateMistVeilProgress() {
+        guard runModifiers.mistVeilActive else { return }
+        let delta = max(0, distanceMeters - lastMistVeilDistance)
+        lastMistVeilDistance = distanceMeters
+        runModifiers.mistVeilDistanceRemaining -= delta
+        if runModifiers.mistVeilDistanceRemaining <= 0 {
+            runModifiers.mistVeilActive = false
+        }
+    }
+
+    private func updateSpawnConfig() {
+        let progress = PlayerProgress.shared
+        let finderBonus = 1 + Double(progress.rippleFinderSpawnBonus)
+
+        var logSpawnMultiplier = 1.0
+        if runModifiers.mistVeilActive {
+            logSpawnMultiplier = 0.45
+        }
+
+        worldSpawner.configure(
+            WorldSpawnConfig(
+                pearlSpawnMultiplier: finderBonus,
+                currentSpawnMultiplier: finderBonus,
+                logSpawnMultiplier: logSpawnMultiplier,
+                logDriftSpeedMultiplier: runModifiers.logSpeedMultiplier
+            )
+        )
+    }
+
     private func resetRun() {
         phase = .throwing
         stonePosition = CGPoint(x: GameConstants.launchX, y: GameConstants.waterSurfaceY + 18)
@@ -459,10 +550,11 @@ final class GameScene: SKScene {
         skipCount = 0
         runStartX = stonePosition.x
         distanceMeters = 0
-        comboMultiplier = 1
-        comboPeak = 1
+        comboMultiplier = max(1, runModifiers.startingCombo)
+        comboPeak = comboMultiplier
         pearlsCollected = 0
         lastPearlCount = 0
+        isFirstSkipOfRun = true
         currentBiome = .goldenHour
         hasOfferedContinue = false
         continuesUsed = 0
@@ -473,10 +565,13 @@ final class GameScene: SKScene {
         maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges
         rippleBoostsRemaining = maxRippleBoosts
         lastBoostTime = 0
+        lastSkipTime = 0
+        lastMistVeilDistance = 0
 
         worldNode.position = .zero
         obstacleNode.removeAllChildren()
         worldSpawner.reset()
+        updateSpawnConfig()
         backgroundRoot.removeFromParent()
         backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome)
         insertChild(backgroundRoot, at: 0)
@@ -484,7 +579,7 @@ final class GameScene: SKScene {
         stoneNode.position = stonePosition
         aimOverlay.resetSwipe()
         aimOverlay.isHidden = true
-        hud.updateCombo(1)
+        hud.updateCombo(comboMultiplier)
         hud.updatePearls(0)
         hud.updateBiome(currentBiome.displayName)
         updateBounceHUD()

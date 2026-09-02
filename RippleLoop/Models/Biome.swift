@@ -76,9 +76,10 @@ enum Biome: CaseIterable {
         }
     }
 
-    static func forDistance(_ meters: Double) -> Biome {
+    static func forDistance(_ meters: Double, goldenHourExtensionMeters: Double = 0) -> Biome {
+        let effectiveMeters = max(0, meters - goldenHourExtensionMeters)
         var current = Biome.goldenHour
-        for biome in Biome.allCases where meters >= biome.distanceThresholdMeters {
+        for biome in Biome.allCases where effectiveMeters >= biome.distanceThresholdMeters {
             current = biome
         }
         return current

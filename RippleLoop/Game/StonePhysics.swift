@@ -32,10 +32,12 @@ enum StonePhysics {
         velocity: inout CGVector,
         at position: inout CGPoint,
         angleBonus: CGFloat = 0,
-        retentionBonus: CGFloat = 0
+        retentionBonus: CGFloat = 0,
+        minSpeedReduction: CGFloat = 0
     ) -> Bool {
         let currentSpeed = speed(velocity)
-        guard currentSpeed >= GameConstants.minSkipSpeed else { return false }
+        let minSpeed = max(40, GameConstants.minSkipSpeed - minSpeedReduction)
+        guard currentSpeed >= minSpeed else { return false }
 
         let entryAngle = atan2(abs(velocity.dy), max(abs(velocity.dx), 0.001))
         guard entryAngle <= GameConstants.maxSkipEntryAngle + angleBonus else { return false }
@@ -72,8 +74,8 @@ enum StonePhysics {
         _ = currentSpeed
     }
 
-    static func applyBounce(velocity: inout CGVector, holding: Bool) {
-        let lift = GameConstants.bounceLiftForce * (holding ? GameConstants.bounceHoldMultiplier : 1)
+    static func applyBounce(velocity: inout CGVector, holding: Bool, holdLiftMultiplier: CGFloat = 1) {
+        let lift = GameConstants.bounceLiftForce * (holding ? GameConstants.bounceHoldMultiplier * holdLiftMultiplier : 1)
         velocity.dy = max(velocity.dy, 0) + lift
         velocity.dx += 18
     }
@@ -81,5 +83,28 @@ enum StonePhysics {
     static func applyDoubleBounce(velocity: inout CGVector) {
         velocity.dy = max(velocity.dy, 0) + GameConstants.doubleBounceForce
         velocity.dx += 36
+    }
+
+    static func predictedArcPoints(
+        start: CGPoint,
+        power: CGFloat,
+        angleRadians: CGFloat,
+        powerBonus: CGFloat,
+        steps: Int
+    ) -> [CGPoint] {
+        var position = start
+        var velocity = launchVelocity(power: power, angleRadians: angleRadians, powerBonus: powerBonus)
+        let deltaTime: CGFloat = 0.05
+        var points: [CGPoint] = [position]
+
+        for _ in 0..<max(steps, 1) {
+            integrate(position: &position, velocity: &velocity, deltaTime: deltaTime)
+            points.append(position)
+            if position.y <= GameConstants.waterSurfaceY {
+                break
+            }
+        }
+
+        return points
     }
 }

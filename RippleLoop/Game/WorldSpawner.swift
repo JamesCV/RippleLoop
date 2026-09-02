@@ -1,9 +1,17 @@
 import SpriteKit
 
+struct WorldSpawnConfig {
+    var pearlSpawnMultiplier: Double = 1
+    var currentSpawnMultiplier: Double = 1
+    var logSpawnMultiplier: Double = 1
+    var logDriftSpeedMultiplier: CGFloat = 1
+}
+
 final class WorldSpawner {
     private var nextSpawnX: CGFloat = 480
     private var spawnIndex = 0
     private let container: SKNode
+    private var config = WorldSpawnConfig()
 
     init(container: SKNode) {
         self.container = container
@@ -13,6 +21,11 @@ final class WorldSpawner {
         container.removeAllChildren()
         nextSpawnX = 480
         spawnIndex = 0
+        config = WorldSpawnConfig()
+    }
+
+    func configure(_ config: WorldSpawnConfig) {
+        self.config = config
     }
 
     func update(stoneX: CGFloat, distanceMeters: Double) {
@@ -27,19 +40,29 @@ final class WorldSpawner {
         spawnIndex += 1
         let difficulty = min(max(distanceMeters / 1500, 0), 1)
 
-        if spawnIndex > 2 && Double.random(in: 0...1) < 0.35 + difficulty * 0.25 {
-            let log = LogObstacle()
+        let logChance = (0.35 + difficulty * 0.25) * config.logSpawnMultiplier
+        if spawnIndex > 2 && Double.random(in: 0...1) < logChance {
+            let log = LogObstacle(driftSpeedMultiplier: config.logDriftSpeedMultiplier)
             log.position.x = nextSpawnX + CGFloat.random(in: -40...80)
             container.addChild(log)
         }
 
-        if spawnIndex > 1 && Double.random(in: 0...1) < 0.22 + difficulty * 0.12 {
+        let currentChance = (0.22 + difficulty * 0.12) * config.currentSpawnMultiplier
+        if spawnIndex > 1 && Double.random(in: 0...1) < currentChance {
             let current = SpeedCurrentNode()
             current.position.x = nextSpawnX + CGFloat.random(in: 20...100)
             container.addChild(current)
         }
 
-        let pearlCount = Int.random(in: 1...3)
+        let pearlRoll = Double.random(in: 0...1)
+        let extraPearlChance = min(max((config.pearlSpawnMultiplier - 1) * 0.35, 0), 0.65)
+        let pearlCount: Int
+        if pearlRoll < extraPearlChance {
+            pearlCount = Int.random(in: 2...4)
+        } else {
+            pearlCount = Int.random(in: 1...3)
+        }
+
         for index in 0..<pearlCount {
             let lane: PearlLane
             let roll = Double.random(in: 0...1)

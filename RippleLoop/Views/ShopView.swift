@@ -21,11 +21,11 @@ struct ShopView: View {
                 ScrollView {
                     VStack(spacing: 14) {
                         if category == .skills {
-                            ForEach(UpgradeKind.allCases) { upgrade in
-                                skillRow(upgrade)
+                            ForEach(SkillTree.allCases) { tree in
+                                skillTreeSection(tree)
                             }
                         } else {
-                            equippedBanner
+                            loadoutBanner
                             ForEach(ShopItemKind.allCases) { item in
                                 itemRow(item)
                             }
@@ -86,30 +86,102 @@ struct ShopView: View {
         .padding(.bottom, 14)
     }
 
-    private var equippedBanner: some View {
-        Group {
-            if let equipped = progress.equippedItem {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Equipped for next run")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.65))
-                        Text(equipped.title)
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color(hex: "#FFD878"))
-                    }
-                    Spacer()
-                    Button("Clear") {
-                        PlayerProgress.shared.equipItem(nil)
+    private var loadoutBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Loadout · \(progress.maxLoadoutSlots) slot\(progress.maxLoadoutSlots == 1 ? "" : "s")")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
+                Spacer()
+                if progress.equippedItems.contains(where: { $0 != nil }) {
+                    Button("Clear all") {
+                        PlayerProgress.shared.clearLoadout()
                         progress.refresh()
                     }
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
                 }
-                .padding(14)
-                .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+            }
+
+            if progress.maxLoadoutSlots < 2 {
+                Text("Reach 500m to unlock a second loadout slot")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+
+            HStack(spacing: 10) {
+                ForEach(0..<progress.maxLoadoutSlots, id: \.self) { slot in
+                    loadoutSlotView(slot: slot)
+                }
             }
         }
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func loadoutSlotView(slot: Int) -> some View {
+        let equipped = progress.equippedItem(in: slot)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Slot \(slot + 1)")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+
+            if let equipped {
+                Text(equipped.title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#FFD878"))
+                    .lineLimit(2)
+                Button("Remove") {
+                    PlayerProgress.shared.equipItem(nil, slot: slot)
+                    progress.refresh()
+                }
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
+            } else {
+                Text("Empty")
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func skillTreeSection(_ tree: SkillTree) -> some View {
+        let unlocked = progress.isSkillTreeUnlocked(tree)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(tree.title)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(unlocked ? .white : .white.opacity(0.45))
+                Spacer()
+                if unlocked {
+                    Text("Unlocked")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(hex: "#9BE7A8"))
+                } else {
+                    Text("\(Int(tree.unlockDistanceMeters))m to unlock")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+            }
+
+            if unlocked {
+                ForEach(tree.upgrades) { upgrade in
+                    skillRow(upgrade)
+                }
+            } else {
+                Text("Run farther to discover \(tree.title.lowercased()) skills")
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .padding(.vertical, 8)
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(unlocked ? 0.08 : 0.04), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func skillRow(_ upgrade: UpgradeKind) -> some View {
@@ -142,20 +214,31 @@ struct ShopView: View {
                 }
             }
         }
-        .padding(16)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+        .padding(14)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func itemRow(_ item: ShopItemKind) -> some View {
         let owned = progress.itemCount(item)
-        let equipped = progress.equippedItem == item
+        let equippedSlots = progress.equippedSlots(for: item)
 
         return VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                    HStack(spacing: 8) {
+                        Text(item.title)
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text(item.tier == .common ? "Common" : "Uncommon")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                item.tier == .common ? Color.white.opacity(0.15) : Color(hex: "#9BE7A8").opacity(0.35),
+                                in: Capsule()
+                            )
+                            .foregroundStyle(item.tier == .common ? .white.opacity(0.75) : Color(hex: "#9BE7A8"))
+                    }
                     Text(item.description)
                         .font(.system(size: 13, weight: .regular, design: .rounded))
                         .foregroundStyle(.white.opacity(0.65))
@@ -175,20 +258,23 @@ struct ShopView: View {
                 }
 
                 if owned > 0 {
-                    Button {
-                        PlayerProgress.shared.equipItem(equipped ? nil : item)
-                        progress.refresh()
-                        session.showToast(equipped ? "Item cleared" : "Equipped for next run")
-                    } label: {
-                        Text(equipped ? "Equipped" : "Equip")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                equipped ? Color(hex: "#FFD878") : Color.white.opacity(0.15),
-                                in: Capsule()
-                            )
-                            .foregroundStyle(equipped ? Color(hex: "#2A3848") : .white)
+                    ForEach(0..<progress.maxLoadoutSlots, id: \.self) { slot in
+                        let isEquipped = equippedSlots.contains(slot)
+                        Button {
+                            PlayerProgress.shared.equipItem(isEquipped ? nil : item, slot: slot)
+                            progress.refresh()
+                            session.showToast(isEquipped ? "Removed from slot \(slot + 1)" : "Equipped to slot \(slot + 1)")
+                        } label: {
+                            Text(isEquipped ? "S\(slot + 1) ✓" : "S\(slot + 1)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    isEquipped ? Color(hex: "#FFD878") : Color.white.opacity(0.15),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(isEquipped ? Color(hex: "#2A3848") : .white)
+                        }
                     }
                 }
             }
@@ -213,11 +299,15 @@ struct ShopView: View {
 @MainActor
 final class ShopProgressObserver: ObservableObject {
     @Published var ripples = PlayerProgress.shared.ripples
-    @Published var equippedItem = PlayerProgress.shared.equippedItemForNextRun
+    @Published var equippedItems: [ShopItemKind?] = PlayerProgress.shared.equippedItemsForNextRun
+    @Published var maxLoadoutSlots = PlayerProgress.shared.maxLoadoutSlots
+    @Published var bestDistance = PlayerProgress.shared.bestDistanceMeters
 
     func refresh() {
         ripples = PlayerProgress.shared.ripples
-        equippedItem = PlayerProgress.shared.equippedItemForNextRun
+        equippedItems = PlayerProgress.shared.equippedItemsForNextRun
+        maxLoadoutSlots = PlayerProgress.shared.maxLoadoutSlots
+        bestDistance = PlayerProgress.shared.bestDistanceMeters
     }
 
     func level(for upgrade: UpgradeKind) -> Int {
@@ -226,5 +316,19 @@ final class ShopProgressObserver: ObservableObject {
 
     func itemCount(_ item: ShopItemKind) -> Int {
         PlayerProgress.shared.itemCount(item)
+    }
+
+    func isSkillTreeUnlocked(_ tree: SkillTree) -> Bool {
+        PlayerProgress.shared.isSkillTreeUnlocked(tree)
+    }
+
+    func equippedItem(in slot: Int) -> ShopItemKind? {
+        PlayerProgress.shared.equippedItem(in: slot)
+    }
+
+    func equippedSlots(for item: ShopItemKind) -> [Int] {
+        equippedItems.enumerated().compactMap { index, equipped in
+            equipped == item ? index : nil
+        }
     }
 }

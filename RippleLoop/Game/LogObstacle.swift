@@ -4,8 +4,10 @@ final class LogObstacle: SKNode {
     let logWidth: CGFloat = 110
     let logHeight: CGFloat = 28
     private let shadowNode = SKShapeNode()
+    private let driftSpeedMultiplier: CGFloat
 
-    init() {
+    init(driftSpeedMultiplier: CGFloat = 1) {
+        self.driftSpeedMultiplier = driftSpeedMultiplier
         super.init()
         zPosition = 15
 
@@ -22,11 +24,18 @@ final class LogObstacle: SKNode {
 
         position = CGPoint(x: 0, y: GameConstants.waterSurfaceY + logHeight + 8)
 
+        let bobDuration = 1.2 / Double(max(driftSpeedMultiplier, 0.2))
         let drift = SKAction.sequence([
-            SKAction.moveBy(x: 0, y: 2, duration: 1.2),
-            SKAction.moveBy(x: 0, y: -2, duration: 1.2)
+            SKAction.moveBy(x: 0, y: 2, duration: bobDuration),
+            SKAction.moveBy(x: 0, y: -2, duration: bobDuration)
         ])
         run(SKAction.repeatForever(drift))
+
+        let horizontalDrift = SKAction.sequence([
+            SKAction.moveBy(x: 18 * driftSpeedMultiplier, y: 0, duration: 2.4 / Double(max(driftSpeedMultiplier, 0.2))),
+            SKAction.moveBy(x: -18 * driftSpeedMultiplier, y: 0, duration: 2.4 / Double(max(driftSpeedMultiplier, 0.2)))
+        ])
+        run(SKAction.repeatForever(horizontalDrift))
     }
 
     @available(*, unavailable)
