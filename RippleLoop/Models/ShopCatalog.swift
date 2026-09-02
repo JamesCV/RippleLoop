@@ -154,6 +154,7 @@ enum ShopCategory: String, CaseIterable, Identifiable {
     case stones
     case outfits
     case dock
+    case blessings
 
     var id: String { rawValue }
 
@@ -164,10 +165,12 @@ enum ShopCategory: String, CaseIterable, Identifiable {
         case .stones: return "Stones"
         case .outfits: return "Outfits"
         case .dock: return "Dock"
+        case .blessings: return "Blessings"
         }
     }
 
     static var dockTabUnlockDistanceMeters: Double { 800 }
+    static var blessingsTabUnlockDistanceMeters: Double { 2_000 }
 }
 
 enum ItemTier: Int, Comparable {
@@ -681,5 +684,130 @@ enum DockTier: Int, CaseIterable {
         if ratio >= 0.55 { return .lantern }
         if ratio >= 0.25 { return .sturdy }
         return .weathered
+    }
+}
+
+enum BlessingKind: String, CaseIterable, Identifiable {
+    case stillWaters
+    case gildedCurrents
+    case skippersGrace
+    case moonlitPearls
+    case calmBreeze
+    case lakesFavor
+    case rippleEcho
+
+    var id: String { rawValue }
+
+    var category: ShopCategory { .blessings }
+
+    var title: String {
+        switch self {
+        case .stillWaters: return "Still Waters"
+        case .gildedCurrents: return "Gilded Currents"
+        case .skippersGrace: return "Skipper's Grace"
+        case .moonlitPearls: return "Moonlit Pearls"
+        case .calmBreeze: return "Calm Breeze"
+        case .lakesFavor: return "Lake's Favor"
+        case .rippleEcho: return "Ripple Echo"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .stillWaters: return "No logs for the first 600m"
+        case .gildedCurrents: return "Speed currents spawn more often"
+        case .skippersGrace: return "Preserve combo once if a chain breaks"
+        case .moonlitPearls: return "More pearls with a gentle pull"
+        case .calmBreeze: return "Stronger bounces and hold lift"
+        case .lakesFavor: return "+8% Ripples earned this run"
+        case .rippleEcho: return "Wider double-bounce timing window"
+        }
+    }
+
+    var unlockDistanceMeters: Double {
+        switch self {
+        case .stillWaters, .gildedCurrents: return 2_000
+        case .skippersGrace, .moonlitPearls: return 2_500
+        case .calmBreeze: return 3_000
+        case .lakesFavor: return 3_500
+        case .rippleEcho: return 5_000
+        }
+    }
+
+    var cost: Int {
+        switch self {
+        case .stillWaters: return 120
+        case .gildedCurrents: return 125
+        case .skippersGrace: return 118
+        case .moonlitPearls: return 115
+        case .calmBreeze: return 122
+        case .lakesFavor: return 135
+        case .rippleEcho: return 145
+        }
+    }
+
+    var accentHex: String {
+        switch self {
+        case .stillWaters: return "#88C8E8"
+        case .gildedCurrents: return "#FFD878"
+        case .skippersGrace: return "#9BE7A8"
+        case .moonlitPearls: return "#C9A7E8"
+        case .calmBreeze: return "#A8D8F0"
+        case .lakesFavor: return "#E8B060"
+        case .rippleEcho: return "#E878A8"
+        }
+    }
+}
+
+struct BlessingRunModifiers {
+    var stillWatersActive = false
+    var stillWatersDistanceRemaining: Double = 0
+    var logSpawnMultiplier: Double = 1
+    var currentSpawnMultiplier: Double = 1
+    var comboGraceAvailable = false
+    var comboGraceUsed = false
+    var pearlSpawnMultiplier: Double = 1
+    var pearlDriftRadius: CGFloat = 0
+    var bounceLiftMultiplier: CGFloat = 1
+    var holdLiftMultiplier: CGFloat = 1
+    var rippleEarnMultiplier: Double = 1
+    var doubleBounceWindowBonus: TimeInterval = 0
+
+    mutating func apply(_ blessing: BlessingKind) {
+        switch blessing {
+        case .stillWaters:
+            stillWatersActive = true
+            stillWatersDistanceRemaining = 600
+            logSpawnMultiplier = 0
+        case .gildedCurrents:
+            currentSpawnMultiplier *= 1.35
+        case .skippersGrace:
+            comboGraceAvailable = true
+        case .moonlitPearls:
+            pearlSpawnMultiplier *= 1.25
+            pearlDriftRadius = max(pearlDriftRadius, 22)
+        case .calmBreeze:
+            bounceLiftMultiplier *= 1.12
+            holdLiftMultiplier *= 1.12
+        case .lakesFavor:
+            rippleEarnMultiplier *= 1.08
+        case .rippleEcho:
+            doubleBounceWindowBonus += 0.15
+        }
+    }
+
+    static func fromEquipped(_ blessings: [BlessingKind]) -> BlessingRunModifiers {
+        var modifiers = BlessingRunModifiers()
+        for blessing in blessings {
+            modifiers.apply(blessing)
+        }
+        return modifiers
+    }
+}
+
+enum BlessingLoadoutSlots {
+    static func maxSlots(bestDistance: Double) -> Int {
+        guard bestDistance >= ShopCategory.blessingsTabUnlockDistanceMeters else { return 0 }
+        return bestDistance >= 4_000 ? 2 : 1
     }
 }

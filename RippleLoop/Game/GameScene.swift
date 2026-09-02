@@ -47,10 +47,12 @@ final class GameScene: SKScene {
     private var runModifiers = RunItemModifiers()
     private var stoneModifiers = StoneRunModifiers()
     private var dockModifiers = DockRunModifiers()
+    private var blessingModifiers = BlessingRunModifiers()
     private var rippleBoostsRemaining = 0
     private var maxRippleBoosts = 0
     private var lastBoostTime: TimeInterval = 0
     private var lastMistVeilDistance: Double = 0
+    private var lastStillWatersDistance: Double = 0
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0, y: 0)
@@ -102,6 +104,7 @@ final class GameScene: SKScene {
         runModifiers = PlayerProgress.shared.consumeEquippedItemsIfNeeded()
         stoneModifiers = PlayerProgress.shared.stoneRunModifiers
         dockModifiers = PlayerProgress.shared.dockRunModifiers
+        blessingModifiers = PlayerProgress.shared.activeBlessingRunModifiers
         applyEquippedStoneAppearance()
         resetRun()
         startThrowSequence()
@@ -229,7 +232,8 @@ final class GameScene: SKScene {
     private func handleBounceInput(at time: TimeInterval) {
         guard phase == .flying else { return }
 
-        if time - lastTapTime <= GameConstants.doubleBounceWindow, doubleBouncesRemaining > 0 {
+        if time - lastTapTime <= GameConstants.doubleBounceWindow + blessingModifiers.doubleBounceWindowBonus,
+           doubleBouncesRemaining > 0 {
             doubleBouncesRemaining -= 1
             StonePhysics.applyDoubleBounce(velocity: &stoneVelocity)
             slowMoUntil = time + GameConstants.slowMoDuration
@@ -243,7 +247,11 @@ final class GameScene: SKScene {
             HapticManager.doubleBounce()
             SoundManager.shared.playDoubleBounce()
         } else {
-            StonePhysics.applyBounce(velocity: &stoneVelocity, holding: false)
+            StonePhysics.applyBounce(
+                velocity: &stoneVelocity,
+                holding: false,
+                bounceLiftMultiplier: blessingModifiers.bounceLiftMultiplier
+            )
             let ripple = RippleEffect(
                 at: CGPoint(x: stonePosition.x, y: stonePosition.y - 8),
                 strength: 0.6
@@ -269,7 +277,7 @@ final class GameScene: SKScene {
             StonePhysics.applyBounce(
                 velocity: &stoneVelocity,
                 holding: true,
-                holdLiftMultiplier: PlayerProgress.shared.holdLiftMultiplier
+                holdLiftMultiplier: PlayerProgress.shared.holdLiftMultiplier * blessingModifiers.holdLiftMultiplier
             )
         }
 
@@ -286,7 +294,7 @@ final class GameScene: SKScene {
             return
         }
 
-        let magnet = PlayerProgress.shared.pearlMagnetRadius
+        let magnet = max(PlayerProgress.shared.pearlMagnetRadius, blessingModifiers.pearlDriftRadius)
         pearlsCollected += worldSpawner.collectPearls(near: stonePosition, magnetRadius: magnet)
         if pearlsCollected > lastPearlCount {
             let gained = pearlsCollected - lastPearlCount
@@ -365,6 +373,7 @@ final class GameScene: SKScene {
         stoneNode.position = stonePosition
         updateCamera()
         updateMistVeilProgress()
+        updateStillWatersProgress()
         updateBiomeIfNeeded()
         updateSpawnConfig()
         worldSpawner.update(stoneX: stonePosition.x, distanceMeters: distanceMeters)
@@ -450,7 +459,8 @@ final class GameScene: SKScene {
             biome: currentBiome,
             pearlRippleMultiplier: runModifiers.pearlRippleMultiplier,
             pearlRippleBonus: stoneModifiers.pearlRippleBonus,
-            rippleEarnMultiplier: runModifiers.rippleEarnMultiplier
+            rippleEarnMultiplier: runModifiers.rippleEarnMultiplier,
+            blessingRippleEarnMultiplier: blessingModifiers.rippleEarnMultiplier
         )
         host?.gameSceneDidFinish(summary)
     }
@@ -491,6 +501,10 @@ final class GameScene: SKScene {
         let comboWindow = GameConstants.comboWindowSeconds + PlayerProgress.shared.comboWindowBonus + stoneModifiers.comboWindowBonus + dockModifiers.comboWindowBonus
         if time - lastSkipTime <= comboWindow {
             comboMultiplier = min(comboMultiplier + 1, 10)
+        } else if blessingModifiers.comboGraceAvailable && !blessingModifiers.comboGraceUsed && comboMultiplier > 1 {
+            blessingModifiers.comboGraceUsed = true
+            hud.flashCombo()
+            HapticManager.skip(combo: comboMultiplier)
         } else {
             comboMultiplier = 1
         }
@@ -540,19 +554,30 @@ final class GameScene: SKScene {
         }
     }
 
+    private func updateStillWatersProgress() {
+        guard blessingModifiers.stillWatersActive else { return }
+        let delta = max(0, distanceMeters - lastStillWatersDistance)
+        lastStillWatersDistance = distanceMeters
+        blessingModifiers.stillWatersDistanceRemaining -= delta
+        if blessingModifiers.stillWatersDistanceRemaining <= 0 {
+            blessingModifiers.stillWatersActive = false
+            blessingModifiers.logSpawnMultiplier = 1
+        }
+    }
+
     private func updateSpawnConfig() {
         let progress = PlayerProgress.shared
         let finderBonus = 1 + Double(progress.rippleFinderSpawnBonus)
 
-        var logSpawnMultiplier = 1.0
+        var logSpawnMultiplier = blessingModifiers.logSpawnMultiplier
         if runModifiers.mistVeilActive {
-            logSpawnMultiplier = 0.45
+            logSpawnMultiplier *= 0.45
         }
 
         worldSpawner.configure(
             WorldSpawnConfig(
-                pearlSpawnMultiplier: finderBonus * runModifiers.pearlSpawnMultiplier,
-                currentSpawnMultiplier: finderBonus,
+                pearlSpawnMultiplier: finderBonus * runModifiers.pearlSpawnMultiplier * blessingModifiers.pearlSpawnMultiplier,
+                currentSpawnMultiplier: finderBonus * blessingModifiers.currentSpawnMultiplier,
                 logSpawnMultiplier: logSpawnMultiplier,
                 logDriftSpeedMultiplier: runModifiers.logSpeedMultiplier
             )
@@ -589,6 +614,7 @@ final class GameScene: SKScene {
         lastBoostTime = 0
         lastSkipTime = 0
         lastMistVeilDistance = 0
+        lastStillWatersDistance = 0
 
         worldNode.position = .zero
         obstacleNode.removeAllChildren()

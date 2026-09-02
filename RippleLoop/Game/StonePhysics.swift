@@ -74,8 +74,8 @@ enum StonePhysics {
         _ = currentSpeed
     }
 
-    static func applyBounce(velocity: inout CGVector, holding: Bool, holdLiftMultiplier: CGFloat = 1) {
-        let lift = GameConstants.bounceLiftForce * (holding ? GameConstants.bounceHoldMultiplier * holdLiftMultiplier : 1)
+    static func applyBounce(velocity: inout CGVector, holding: Bool, holdLiftMultiplier: CGFloat = 1, bounceLiftMultiplier: CGFloat = 1) {
+        let lift = GameConstants.bounceLiftForce * (holding ? GameConstants.bounceHoldMultiplier * holdLiftMultiplier : bounceLiftMultiplier)
         velocity.dy = max(velocity.dy, 0) + lift
         velocity.dx += 18
     }

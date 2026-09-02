@@ -49,6 +49,15 @@ struct ShopView: View {
                             } else {
                                 dockLockedBanner
                             }
+                        case .blessings:
+                            blessingLoadoutBanner
+                            if progress.isBlessingsTabUnlocked {
+                                ForEach(BlessingKind.allCases) { blessing in
+                                    blessingRow(blessing)
+                                }
+                            } else {
+                                blessingsLockedBanner
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -550,6 +559,154 @@ struct ShopView: View {
         .padding(16)
         .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
     }
+
+    private var blessingLoadoutBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Blessings · \(progress.maxBlessingSlots) slot\(progress.maxBlessingSlots == 1 ? "" : "s")")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
+                Spacer()
+                if progress.equippedBlessings.contains(where: { $0 != nil }) {
+                    Button("Clear all") {
+                        PlayerProgress.shared.clearBlessingLoadout()
+                        progress.refresh()
+                    }
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+
+            if progress.maxBlessingSlots < 2 && progress.isBlessingsTabUnlocked {
+                Text("Reach 4000m to equip two blessings")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+
+            if progress.maxBlessingSlots > 0 {
+                HStack(spacing: 10) {
+                    ForEach(0..<progress.maxBlessingSlots, id: \.self) { slot in
+                        blessingSlotView(slot: slot)
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func blessingSlotView(slot: Int) -> some View {
+        let equipped = progress.equippedBlessing(in: slot)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Blessing \(slot + 1)")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+
+            if let equipped {
+                Text(equipped.title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: equipped.accentHex))
+                    .lineLimit(2)
+                Button("Remove") {
+                    PlayerProgress.shared.equipBlessing(nil, slot: slot)
+                    progress.refresh()
+                }
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
+            } else {
+                Text("Empty")
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var blessingsLockedBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Lake blessings locked")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+            Text("Reach \(Int(ShopCategory.blessingsTabUnlockDistanceMeters))m to receive blessings from the lake.")
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func blessingRow(_ blessing: BlessingKind) -> some View {
+        let owned = progress.ownsBlessing(blessing)
+        let equippedSlots = progress.equippedBlessingSlots(for: blessing)
+        let unlocked = progress.bestDistance >= blessing.unlockDistanceMeters
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Circle()
+                    .fill(Color(hex: blessing.accentHex).opacity(0.35))
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Circle()
+                            .stroke(Color(hex: blessing.accentHex), lineWidth: 2)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(blessing.title)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(unlocked ? .white : .white.opacity(0.45))
+                    Text(blessing.description)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(unlocked ? 0.65 : 0.4))
+                }
+                Spacer()
+                if owned {
+                    Text("Owned")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(hex: blessing.accentHex))
+                }
+            }
+
+            if !unlocked {
+                Text("\(Int(blessing.unlockDistanceMeters))m to unlock")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            } else if owned {
+                HStack(spacing: 10) {
+                    ForEach(0..<progress.maxBlessingSlots, id: \.self) { slot in
+                        let isEquipped = equippedSlots.contains(slot)
+                        Button {
+                            PlayerProgress.shared.equipBlessing(isEquipped ? nil : blessing, slot: slot)
+                            progress.refresh()
+                            session.showToast(isEquipped ? "Blessing removed" : "Blessing equipped")
+                        } label: {
+                            Text(isEquipped ? "B\(slot + 1) ✓" : "B\(slot + 1)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    isEquipped ? Color(hex: blessing.accentHex) : Color.white.opacity(0.15),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(isEquipped ? Color(hex: "#2A3848") : .white)
+                        }
+                    }
+                }
+            } else {
+                purchaseButton(title: "\(blessing.cost) Ripples", enabled: progress.ripples >= blessing.cost) {
+                    if PlayerProgress.shared.purchaseBlessing(blessing) {
+                        progress.refresh()
+                        session.showToast("Blessing unlocked: \(blessing.title)")
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(unlocked ? 0.08 : 0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
 }
 
 @MainActor
@@ -561,6 +718,8 @@ final class ShopProgressObserver: ObservableObject {
     @Published var equippedStone = PlayerProgress.shared.equippedStone
     @Published var equippedOutfit = PlayerProgress.shared.equippedOutfit
     @Published var dockTier = PlayerProgress.shared.dockTier
+    @Published var equippedBlessings: [BlessingKind?] = PlayerProgress.shared.equippedBlessingsForNextRun
+    @Published var maxBlessingSlots = PlayerProgress.shared.maxBlessingSlots
 
     func refresh() {
         ripples = PlayerProgress.shared.ripples
@@ -570,6 +729,8 @@ final class ShopProgressObserver: ObservableObject {
         equippedStone = PlayerProgress.shared.equippedStone
         equippedOutfit = PlayerProgress.shared.equippedOutfit
         dockTier = PlayerProgress.shared.dockTier
+        equippedBlessings = PlayerProgress.shared.equippedBlessingsForNextRun
+        maxBlessingSlots = PlayerProgress.shared.maxBlessingSlots
     }
 
     func level(for upgrade: UpgradeKind) -> Int {
@@ -608,5 +769,23 @@ final class ShopProgressObserver: ObservableObject {
 
     func dockLevel(for upgrade: DockUpgradeKind) -> Int {
         PlayerProgress.shared.dockLevel(for: upgrade)
+    }
+
+    func isBlessingsTabUnlocked() -> Bool {
+        PlayerProgress.shared.isBlessingsTabUnlocked()
+    }
+
+    func ownsBlessing(_ blessing: BlessingKind) -> Bool {
+        PlayerProgress.shared.ownsBlessing(blessing)
+    }
+
+    func equippedBlessing(in slot: Int) -> BlessingKind? {
+        PlayerProgress.shared.equippedBlessing(in: slot)
+    }
+
+    func equippedBlessingSlots(for blessing: BlessingKind) -> [Int] {
+        equippedBlessings.enumerated().compactMap { index, equipped in
+            equipped == blessing ? index : nil
+        }
     }
 }

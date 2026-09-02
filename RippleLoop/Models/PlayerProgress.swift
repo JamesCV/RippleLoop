@@ -22,6 +22,8 @@ final class PlayerProgress {
         static let outfitPrefix = "ripplerun.outfit."
         static let equippedOutfit = "ripplerun.equippedOutfit"
         static let dockUpgradePrefix = "ripplerun.dock."
+        static let blessingPrefix = "ripplerun.blessing."
+        static let equippedBlessings = "ripplerun.equippedBlessings"
     }
 
     var bestDistanceMeters: Double {
@@ -56,6 +58,33 @@ final class PlayerProgress {
 
     var maxLoadoutSlots: Int {
         LoadoutSlots.maxSlots(bestDistance: bestDistanceMeters)
+    }
+
+    var maxBlessingSlots: Int {
+        BlessingLoadoutSlots.maxSlots(bestDistance: bestDistanceMeters)
+    }
+
+    var equippedBlessingsForNextRun: [BlessingKind?] {
+        get {
+            let stored = defaults.stringArray(forKey: Key.equippedBlessings) ?? []
+            var slots = stored.compactMap { raw -> BlessingKind? in
+                guard !raw.isEmpty else { return nil }
+                return BlessingKind(rawValue: raw)
+            }
+            while slots.count < maxBlessingSlots {
+                slots.append(nil)
+            }
+            return Array(slots.prefix(maxBlessingSlots))
+        }
+        set {
+            let raw = newValue.prefix(maxBlessingSlots).map { $0?.rawValue ?? "" }
+            defaults.set(raw, forKey: Key.equippedBlessings)
+        }
+    }
+
+    var activeBlessingRunModifiers: BlessingRunModifiers {
+        let equipped = equippedBlessingsForNextRun.compactMap { $0 }
+        return BlessingRunModifiers.fromEquipped(equipped)
     }
 
     var equippedStone: StoneKind {
@@ -213,6 +242,52 @@ final class PlayerProgress {
 
     func isDockTabUnlocked() -> Bool {
         bestDistanceMeters >= ShopCategory.dockTabUnlockDistanceMeters
+    }
+
+    func isBlessingsTabUnlocked() -> Bool {
+        bestDistanceMeters >= ShopCategory.blessingsTabUnlockDistanceMeters
+    }
+
+    func ownsBlessing(_ blessing: BlessingKind) -> Bool {
+        defaults.bool(forKey: Key.blessingPrefix + blessing.rawValue)
+    }
+
+    func purchaseBlessing(_ blessing: BlessingKind) -> Bool {
+        guard isBlessingsTabUnlocked() else { return false }
+        guard bestDistanceMeters >= blessing.unlockDistanceMeters else { return false }
+        guard !ownsBlessing(blessing) else { return false }
+        guard ripples >= blessing.cost else { return false }
+        ripples -= blessing.cost
+        defaults.set(true, forKey: Key.blessingPrefix + blessing.rawValue)
+        return true
+    }
+
+    func equippedBlessing(in slot: Int) -> BlessingKind? {
+        guard slot >= 0, slot < equippedBlessingsForNextRun.count else { return nil }
+        return equippedBlessingsForNextRun[slot]
+    }
+
+    func equipBlessing(_ blessing: BlessingKind?, slot: Int) {
+        guard slot >= 0, slot < maxBlessingSlots else { return }
+        if let blessing, !ownsBlessing(blessing) { return }
+
+        var slots = equippedBlessingsForNextRun
+        while slots.count < maxBlessingSlots {
+            slots.append(nil)
+        }
+
+        if let blessing {
+            for index in slots.indices where index != slot && slots[index] == blessing {
+                slots[index] = nil
+            }
+        }
+
+        slots[slot] = blessing
+        equippedBlessingsForNextRun = slots
+    }
+
+    func clearBlessingLoadout() {
+        equippedBlessingsForNextRun = Array(repeating: nil, count: maxBlessingSlots)
     }
 
     func dockLevel(for upgrade: DockUpgradeKind) -> Int {
@@ -379,7 +454,8 @@ final class PlayerProgress {
         biome: Biome,
         pearlRippleMultiplier: Int = 1,
         pearlRippleBonus: Int = 0,
-        rippleEarnMultiplier: Double = 1
+        rippleEarnMultiplier: Double = 1,
+        blessingRippleEarnMultiplier: Double = 1
     ) -> RunSummary {
         totalRuns += 1
         let previousBest = bestDistanceMeters
@@ -393,7 +469,10 @@ final class PlayerProgress {
         let pearlBonus = pearlsCollected * max(1, pearlRippleMultiplier) * (2 + max(0, pearlRippleBonus))
         let comboBonus = comboPeak * 5
         let baseEarned = max(10, distanceBonus + skipBonus + pearlBonus + comboBonus)
-        let earned = max(10, Int(Double(baseEarned) * max(1, rippleEarnMultiplier) * dockRunModifiers.rippleEarnMultiplier))
+        let earned = max(
+            10,
+            Int(Double(baseEarned) * max(1, rippleEarnMultiplier) * dockRunModifiers.rippleEarnMultiplier * max(1, blessingRippleEarnMultiplier))
+        )
         ripples += earned
 
         return RunSummary(
