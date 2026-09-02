@@ -155,6 +155,7 @@ enum ShopCategory: String, CaseIterable, Identifiable {
     case outfits
     case dock
     case blessings
+    case builds
 
     var id: String { rawValue }
 
@@ -166,17 +167,20 @@ enum ShopCategory: String, CaseIterable, Identifiable {
         case .outfits: return "Outfits"
         case .dock: return "Dock"
         case .blessings: return "Blessings"
+        case .builds: return "Builds"
         }
     }
 
     static var dockTabUnlockDistanceMeters: Double { 800 }
     static var blessingsTabUnlockDistanceMeters: Double { 2_000 }
+    static var buildsTabUnlockDistanceMeters: Double { 3_500 }
 }
 
 enum ItemTier: Int, Comparable {
     case common = 1
     case uncommon = 2
     case rare = 3
+    case legendary = 4
 
     static func < (lhs: ItemTier, rhs: ItemTier) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -187,6 +191,7 @@ enum ItemTier: Int, Comparable {
         case .common: return "Common"
         case .uncommon: return "Uncommon"
         case .rare: return "Rare"
+        case .legendary: return "Legendary"
         }
     }
 }
@@ -212,6 +217,12 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
     case deepCurrent
     case secondWind
     case skippersLuck
+    // Tier 4 — Legendary
+    case voidSkim
+    case goldenWake
+    case pearlCrown
+    case legendSurge
+    case twinRipple
 
     var id: String { rawValue }
 
@@ -226,6 +237,19 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
             return .uncommon
         case .glassSkim, .pearlTide, .deepCurrent, .secondWind, .skippersLuck:
             return .rare
+        case .voidSkim, .goldenWake, .pearlCrown, .legendSurge, .twinRipple:
+            return .legendary
+        }
+    }
+
+    var unlockDistanceMeters: Double? {
+        switch self {
+        case .voidSkim: return 3_500
+        case .goldenWake: return 4_000
+        case .pearlCrown: return 4_000
+        case .legendSurge: return 4_500
+        case .twinRipple: return 5_000
+        default: return nil
         }
     }
 
@@ -248,6 +272,11 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .deepCurrent: return "Deep Current"
         case .secondWind: return "Second Wind"
         case .skippersLuck: return "Skipper's Luck"
+        case .voidSkim: return "Void Skim"
+        case .goldenWake: return "Golden Wake"
+        case .pearlCrown: return "Pearl Crown"
+        case .legendSurge: return "Legend Surge"
+        case .twinRipple: return "Twin Ripple"
         }
     }
 
@@ -270,6 +299,11 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .deepCurrent: return "Every current grants +1 boost charge"
         case .secondWind: return "Last Ripple refills all boost charges"
         case .skippersLuck: return "+15% Ripples earned this run"
+        case .voidSkim: return "Skip at much lower speeds all run"
+        case .goldenWake: return "+30% launch speed and +1 boost"
+        case .pearlCrown: return "3× Ripples from pearls collected"
+        case .legendSurge: return "+30% boost power, −25% cooldown"
+        case .twinRipple: return "Regain a double bounce after each skip"
         }
     }
 
@@ -292,6 +326,11 @@ enum ShopItemKind: String, CaseIterable, Identifiable {
         case .deepCurrent: return 95
         case .secondWind: return 105
         case .skippersLuck: return 98
+        case .voidSkim: return 150
+        case .goldenWake: return 155
+        case .pearlCrown: return 160
+        case .legendSurge: return 165
+        case .twinRipple: return 175
         }
     }
 }
@@ -530,6 +569,10 @@ struct RunItemModifiers {
     var secondWindActive = false
     var rippleEarnMultiplier: Double = 1
 
+    var minSpeedReductionBonus: CGFloat = 0
+    var boostStrengthMultiplier: CGFloat = 1
+    var twinRippleActive = false
+
     mutating func apply(_ item: ShopItemKind) {
         switch item {
         case .surgePack:
@@ -567,12 +610,25 @@ struct RunItemModifiers {
             secondWindActive = true
         case .skippersLuck:
             rippleEarnMultiplier = 1.15
+        case .voidSkim:
+            minSpeedReductionBonus += 30
+        case .goldenWake:
+            launchSpeedMultiplier *= 1.3
+            extraBoostCharges += 1
+        case .pearlCrown:
+            pearlRippleMultiplier = max(pearlRippleMultiplier, 3)
+        case .legendSurge:
+            boostStrengthMultiplier = 1.3
+            boostCooldownMultiplier *= 0.75
+        case .twinRipple:
+            twinRippleActive = true
         }
     }
 }
 
 enum LoadoutSlots {
     static func maxSlots(bestDistance: Double) -> Int {
+        if bestDistance >= 3_000 { return 4 }
         if bestDistance >= 1_500 { return 3 }
         if bestDistance >= 500 { return 2 }
         return 1
@@ -809,5 +865,79 @@ enum BlessingLoadoutSlots {
     static func maxSlots(bestDistance: Double) -> Int {
         guard bestDistance >= ShopCategory.blessingsTabUnlockDistanceMeters else { return 0 }
         return bestDistance >= 4_000 ? 2 : 1
+    }
+}
+
+enum BuildArchetype: String, CaseIterable, Identifiable {
+    case speedPilot
+    case comboMonk
+    case pearlDiver
+    case lakeWanderer
+    case surgeRunner
+    case zenSkipper
+
+    var id: String { rawValue }
+
+    var category: ShopCategory { .builds }
+
+    var title: String {
+        switch self {
+        case .speedPilot: return "Speed Pilot"
+        case .comboMonk: return "Combo Monk"
+        case .pearlDiver: return "Pearl Diver"
+        case .lakeWanderer: return "Lake Wanderer"
+        case .surgeRunner: return "Surge Runner"
+        case .zenSkipper: return "Zen Skipper"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .speedPilot: return "Launch fast, ride currents, boost often"
+        case .comboMonk: return "Chain skips and protect your combo"
+        case .pearlDiver: return "Farm pearls for big Ripple payouts"
+        case .lakeWanderer: return "Safe early lake with soft landings"
+        case .surgeRunner: return "Maximum boosts and speed surges"
+        case .zenSkipper: return "Forgiving skips with calm control"
+        }
+    }
+
+    var accentHex: String {
+        switch self {
+        case .speedPilot: return "#FFD878"
+        case .comboMonk: return "#E878A8"
+        case .pearlDiver: return "#C9A7E8"
+        case .lakeWanderer: return "#88C8E8"
+        case .surgeRunner: return "#E8B060"
+        case .zenSkipper: return "#9BE7A8"
+        }
+    }
+
+    var suggestedItems: [ShopItemKind] {
+        switch self {
+        case .speedPilot:
+            return [.tailwindDraught, .surgePack, .skippersTea, .goldenWake]
+        case .comboMonk:
+            return [.comboKindling, .momentumSeed, .glassSkim, .twinRipple]
+        case .pearlDiver:
+            return [.pearlPouch, .pearlTide, .pearlCrown]
+        case .lakeWanderer:
+            return [.mistVeil, .softLanding, .morningDew]
+        case .surgeRunner:
+            return [.surgePack, .deepCurrent, .currentRider, .legendSurge]
+        case .zenSkipper:
+            return [.glideCharm, .logWhisper, .voidSkim]
+        }
+    }
+
+    var suggestedBlessings: [BlessingKind] {
+        switch self {
+        case .speedPilot: return [.gildedCurrents]
+        case .comboMonk: return [.skippersGrace, .rippleEcho]
+        case .pearlDiver: return [.moonlitPearls, .lakesFavor]
+        case .lakeWanderer: return [.stillWaters, .calmBreeze]
+        case .surgeRunner: return [.gildedCurrents]
+        case .zenSkipper: return [.calmBreeze]
+        }
     }
 }

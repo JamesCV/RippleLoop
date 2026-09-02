@@ -248,6 +248,10 @@ final class PlayerProgress {
         bestDistanceMeters >= ShopCategory.blessingsTabUnlockDistanceMeters
     }
 
+    func isBuildsTabUnlocked() -> Bool {
+        bestDistanceMeters >= ShopCategory.buildsTabUnlockDistanceMeters
+    }
+
     func ownsBlessing(_ blessing: BlessingKind) -> Bool {
         defaults.bool(forKey: Key.blessingPrefix + blessing.rawValue)
     }
@@ -288,6 +292,30 @@ final class PlayerProgress {
 
     func clearBlessingLoadout() {
         equippedBlessingsForNextRun = Array(repeating: nil, count: maxBlessingSlots)
+    }
+
+    @discardableResult
+    func applyBuild(_ build: BuildArchetype) -> (itemsEquipped: Int, blessingsEquipped: Int) {
+        clearLoadout()
+        clearBlessingLoadout()
+
+        var itemsEquipped = 0
+        var itemSlot = 0
+        for item in build.suggestedItems where itemCount(item) > 0 && itemSlot < maxLoadoutSlots {
+            equipItem(item, slot: itemSlot)
+            itemSlot += 1
+            itemsEquipped += 1
+        }
+
+        var blessingsEquipped = 0
+        var blessingSlot = 0
+        for blessing in build.suggestedBlessings where ownsBlessing(blessing) && blessingSlot < maxBlessingSlots {
+            equipBlessing(blessing, slot: blessingSlot)
+            blessingSlot += 1
+            blessingsEquipped += 1
+        }
+
+        return (itemsEquipped, blessingsEquipped)
     }
 
     func dockLevel(for upgrade: DockUpgradeKind) -> Int {
@@ -337,6 +365,9 @@ final class PlayerProgress {
     }
 
     func purchaseItem(_ item: ShopItemKind) -> Bool {
+        if let unlockDistance = item.unlockDistanceMeters, bestDistanceMeters < unlockDistance {
+            return false
+        }
         guard ripples >= item.cost else { return false }
         ripples -= item.cost
         setItemCount(itemCount(item) + 1, for: item)

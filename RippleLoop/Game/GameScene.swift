@@ -336,7 +336,7 @@ final class GameScene: SKScene {
                 at: &stonePosition,
                 angleBonus: progress.skipAngleBonus + runModifiers.extraSkipForgiveness + stoneModifiers.skipAngleBonus,
                 retentionBonus: retentionBonus,
-                minSpeedReduction: progress.deepSkimMinSpeedReduction
+                minSpeedReduction: progress.deepSkimMinSpeedReduction + runModifiers.minSpeedReductionBonus
             )
 
             if didSkip {
@@ -344,7 +344,7 @@ final class GameScene: SKScene {
                 isFirstSkipOfRun = false
                 registerSkip(at: currentTime)
                 inAirSegment = true
-                doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+                refreshDoubleBouncesAfterSkip()
                 let ripple = RippleEffect(
                     at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
                     strength: StonePhysics.speed(stoneVelocity) / 400
@@ -355,7 +355,7 @@ final class GameScene: SKScene {
                 isFirstSkipOfRun = false
                 registerSkip(at: currentTime)
                 inAirSegment = true
-                doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+                refreshDoubleBouncesAfterSkip()
                 let ripple = RippleEffect(
                     at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
                     strength: 0.7
@@ -482,7 +482,7 @@ final class GameScene: SKScene {
         lastBoostTime = now
         StonePhysics.applyRippleBoost(
             velocity: &stoneVelocity,
-            strength: progress.rippleBoostStrength,
+            strength: progress.rippleBoostStrength * runModifiers.boostStrengthMultiplier,
             combo: comboMultiplier
         )
         let ripple = RippleEffect(
@@ -584,6 +584,13 @@ final class GameScene: SKScene {
         )
     }
 
+    private func refreshDoubleBouncesAfterSkip() {
+        doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+        if runModifiers.twinRippleActive {
+            doubleBouncesRemaining += 1
+        }
+    }
+
     private func applyEquippedStoneAppearance() {
         let stone = PlayerProgress.shared.equippedStone
         stoneNode.fillColor = SKColor.hex(stone.fillHex)
@@ -609,6 +616,9 @@ final class GameScene: SKScene {
         stoneNode.alpha = 1
         inAirSegment = true
         doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+        if runModifiers.twinRippleActive {
+            doubleBouncesRemaining += 1
+        }
         maxRippleBoosts = PlayerProgress.shared.rippleBoostsPerRun + runModifiers.extraBoostCharges + stoneModifiers.extraBoostCharges + dockModifiers.extraBoostCharges
         rippleBoostsRemaining = maxRippleBoosts
         lastBoostTime = 0

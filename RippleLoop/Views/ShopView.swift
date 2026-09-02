@@ -58,6 +58,15 @@ struct ShopView: View {
                             } else {
                                 blessingsLockedBanner
                             }
+                        case .builds:
+                            if progress.isBuildsTabUnlocked {
+                                buildsIntroBanner
+                                ForEach(BuildArchetype.allCases) { build in
+                                    buildRow(build)
+                                }
+                            } else {
+                                buildsLockedBanner
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -134,7 +143,7 @@ struct ShopView: View {
                 }
             }
 
-            if progress.maxLoadoutSlots < 3 {
+            if progress.maxLoadoutSlots < 4 {
                 Text(loadoutUnlockHint)
                     .font(.system(size: 12, weight: .regular, design: .rounded))
                     .foregroundStyle(.white.opacity(0.55))
@@ -252,6 +261,7 @@ struct ShopView: View {
     private func itemRow(_ item: ShopItemKind) -> some View {
         let owned = progress.itemCount(item)
         let equippedSlots = progress.equippedSlots(for: item)
+        let itemUnlocked = progress.isItemUnlocked(item)
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
@@ -277,8 +287,14 @@ struct ShopView: View {
                     .foregroundStyle(Color(hex: "#FFD878"))
             }
 
+            if !itemUnlocked, let unlockDistance = item.unlockDistanceMeters {
+                Text("\(Int(unlockDistance))m to unlock")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+
             HStack(spacing: 10) {
-                purchaseButton(title: "\(item.cost) Ripples", enabled: progress.ripples >= item.cost) {
+                purchaseButton(title: "\(item.cost) Ripples", enabled: progress.ripples >= item.cost && itemUnlocked) {
                     if PlayerProgress.shared.purchaseItem(item) {
                         progress.refresh()
                         session.showToast("Purchased \(item.title)")
@@ -327,7 +343,10 @@ struct ShopView: View {
         if progress.bestDistance < 500 {
             return "Reach 500m to unlock a second loadout slot"
         }
-        return "Reach 1500m to unlock a third loadout slot"
+        if progress.bestDistance < 1_500 {
+            return "Reach 1500m to unlock a third loadout slot"
+        }
+        return "Reach 3000m to unlock a fourth loadout slot"
     }
 
     private var equippedStoneBanner: some View {
@@ -481,7 +500,81 @@ struct ShopView: View {
         case .common: return .white.opacity(0.75)
         case .uncommon: return Color(hex: "#9BE7A8")
         case .rare: return Color(hex: "#FFD878")
+        case .legendary: return Color(hex: "#E878A8")
         }
+    }
+
+    private var buildsIntroBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Run builds")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+            Text("Apply a preset loadout from items and blessings you already own.")
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var buildsLockedBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Run builds locked")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+            Text("Reach \(Int(ShopCategory.buildsTabUnlockDistanceMeters))m to unlock build presets.")
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func buildRow(_ build: BuildArchetype) -> some View {
+        let ownedItems = build.suggestedItems.filter { progress.itemCount($0) > 0 }.count
+        let ownedBlessings = build.suggestedBlessings.filter { progress.ownsBlessing($0) }.count
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(hex: build.accentHex).opacity(0.35))
+                    .frame(width: 8, height: 44)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(build.title)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(build.description)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+            }
+
+            Text("Items \(ownedItems)/\(build.suggestedItems.count) · Blessings \(ownedBlessings)/\(build.suggestedBlessings.count)")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Items: \(build.suggestedItems.map(\.title).joined(separator: " · "))")
+                    .font(.system(size: 11, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+                if !build.suggestedBlessings.isEmpty {
+                    Text("Blessings: \(build.suggestedBlessings.map(\.title).joined(separator: " · "))")
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+            }
+
+            purchaseButton(title: "Apply build", enabled: ownedItems > 0 || ownedBlessings > 0) {
+                let result = PlayerProgress.shared.applyBuild(build)
+                progress.refresh()
+                session.showToast("\(build.title): \(result.itemsEquipped) items, \(result.blessingsEquipped) blessings")
+            }
+        }
+        .padding(16)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var dockTierBanner: some View {
@@ -787,5 +880,14 @@ final class ShopProgressObserver: ObservableObject {
         equippedBlessings.enumerated().compactMap { index, equipped in
             equipped == blessing ? index : nil
         }
+    }
+
+    func isBuildsTabUnlocked() -> Bool {
+        PlayerProgress.shared.isBuildsTabUnlocked()
+    }
+
+    func isItemUnlocked(_ item: ShopItemKind) -> Bool {
+        guard let unlockDistance = item.unlockDistanceMeters else { return true }
+        return bestDistance >= unlockDistance
     }
 }
