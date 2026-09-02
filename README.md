@@ -35,8 +35,9 @@ Sign in with a Game Center sandbox account on device/simulator to test.
 
 - **Dock menu** — Play, Shop, Board (leaderboards), Settings
 - **Throw** — Pebble winds up; swipe to set power and angle
-- **Flight** — hold to rise, double-tap to bounce over obstacles
-- **Skips** — chain skips build combo multiplier with ASMR tones + haptics
+- **Flight** — hold to rise, double-tap to bounce, **BOOST** button for speed surge
+- **Speed currents** — golden pickups restore momentum and grant boost charges
+- **Skips** — chain skips build combo; **Combo Momentum** skill restores speed on chains with ASMR tones + haptics
 - **Biomes** — five distance-based environments
 - **Last Ripple** — one free continue per run (no ads/IAP yet)
 - **Workbench** — spend Ripples on permanent upgrades
