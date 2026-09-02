@@ -7,7 +7,7 @@ cd "$ROOT"
 REPO_NAME="${REPO_NAME:-RippleLoop}"
 VISIBILITY="${VISIBILITY:-public}"
 GITHUB_OWNER="${GITHUB_OWNER:-}"
-DESCRIPTION="Cozy stone-skipping iPhone game built with SwiftUI and SpriteKit"
+DESCRIPTION="Ripple Run — meditative endless stone-skipping iPhone game"
 
 if [ -n "${GH_TOKEN:-}" ]; then
   export GH_TOKEN
