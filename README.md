@@ -40,9 +40,22 @@ Sign in with a Game Center sandbox account on device/simulator to test.
 - **Skips** — chain skips build combo; **Combo Momentum** skill restores speed on chains with ASMR tones + haptics
 - **Biomes** — five distance-based environments
 - **Last Ripple** — one free continue per run (no ads/IAP yet)
-- **Workbench** — spend Ripples on permanent upgrades
+- **Workbench** — spend Ripples on **Skills** (permanent) and **Items** (equip for next run)
 
-## Sound & Haptics
+## Controls
+
+- **Swipe** to aim Pebble's throw; right-edge slider adjusts angle
+- **Hold** during flight to rise gently
+- **Double-tap** for a double bounce over obstacles
+- **BOOST** (top-right) — speed surge when slowing down; limited charges per run
+- Fly through **golden speed currents** for instant momentum
+- Collect pearls in low / mid / high lanes
+
+## Dock Shop
+
+**Skills** (permanent): Launch Power, Skip Forgiveness, Double Bounce, Bounce Float, Pearl Magnet, Boost Tank, Boost Power, Speed Retention, Combo Momentum
+
+**Items** (equip one for next run): Surge Pack (+2 boosts), Tailwind Draught (+25% launch), Glide Charm (forgiving skips), Momentum Seed (big first-skip surge)
 
 Procedural skip tones (pitch rises with combo) and UIKit haptics on skips, bounces, pearls, biome shifts, and new bests. Toggle both in **Settings** on the dock.
 
