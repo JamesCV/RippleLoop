@@ -21,6 +21,20 @@
 		B10000000000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000012 /* Assets.xcassets */; };
 		B10000000000000000000013 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000013 /* PrivacyInfo.xcprivacy */; };
 		B10000000000000000000014 /* StonePhysicsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000014 /* StonePhysicsTests.swift */; };
+		B10000000000000000000015 /* Biome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000018 /* Biome.swift */; };
+		B10000000000000000000016 /* UpgradeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000019 /* UpgradeCatalog.swift */; };
+		B10000000000000000000017 /* GameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000020 /* GameSession.swift */; };
+		B10000000000000000000018 /* PebbleNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000021 /* PebbleNode.swift */; };
+		B10000000000000000000019 /* PearlNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000022 /* PearlNode.swift */; };
+		B10000000000000000000020 /* LogObstacle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000023 /* LogObstacle.swift */; };
+		B10000000000000000000021 /* WorldSpawner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000024 /* WorldSpawner.swift */; };
+		B10000000000000000000022 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000025 /* RootView.swift */; };
+		B10000000000000000000023 /* DockMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000026 /* DockMenuView.swift */; };
+		B10000000000000000000024 /* ShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000027 /* ShopView.swift */; };
+		B10000000000000000000025 /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000028 /* ResultsView.swift */; };
+		B10000000000000000000026 /* LastRippleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000029 /* LastRippleView.swift */; };
+		B10000000000000000000027 /* GameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000030 /* GameContainerView.swift */; };
+		B10000000000000000000028 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000031 /* Color+Hex.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +65,20 @@
 		F10000000000000000000015 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F10000000000000000000016 /* RippleLoop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RippleLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F10000000000000000000017 /* RippleLoopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RippleLoopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F10000000000000000000018 /* Biome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Biome.swift; sourceTree = "<group>"; };
+		F10000000000000000000019 /* UpgradeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeCatalog.swift; sourceTree = "<group>"; };
+		F10000000000000000000020 /* GameSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSession.swift; sourceTree = "<group>"; };
+		F10000000000000000000021 /* PebbleNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNode.swift; sourceTree = "<group>"; };
+		F10000000000000000000022 /* PearlNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PearlNode.swift; sourceTree = "<group>"; };
+		F10000000000000000000023 /* LogObstacle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogObstacle.swift; sourceTree = "<group>"; };
+		F10000000000000000000024 /* WorldSpawner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldSpawner.swift; sourceTree = "<group>"; };
+		F10000000000000000000025 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		F10000000000000000000026 /* DockMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockMenuView.swift; sourceTree = "<group>"; };
+		F10000000000000000000027 /* ShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopView.swift; sourceTree = "<group>"; };
+		F10000000000000000000028 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
+		F10000000000000000000029 /* LastRippleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastRippleView.swift; sourceTree = "<group>"; };
+		F10000000000000000000030 /* GameContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameContainerView.swift; sourceTree = "<group>"; };
+		F10000000000000000000031 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +113,7 @@
 			children = (
 				F10000000000000000000001 /* RippleLoopApp.swift */,
 				F10000000000000000000002 /* ContentView.swift */,
+				G10000000000000000000007 /* Views */,
 				G10000000000000000000005 /* Game */,
 				G10000000000000000000006 /* Models */,
 				F10000000000000000000012 /* Assets.xcassets */,
@@ -121,6 +150,10 @@
 				F10000000000000000000007 /* HUDNode.swift */,
 				F10000000000000000000008 /* AimOverlay.swift */,
 				F10000000000000000000009 /* GameScene.swift */,
+				F10000000000000000000021 /* PebbleNode.swift */,
+				F10000000000000000000022 /* PearlNode.swift */,
+				F10000000000000000000023 /* LogObstacle.swift */,
+				F10000000000000000000024 /* WorldSpawner.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -130,8 +163,25 @@
 			children = (
 				F10000000000000000000010 /* GameState.swift */,
 				F10000000000000000000011 /* PlayerProgress.swift */,
+				F10000000000000000000018 /* Biome.swift */,
+				F10000000000000000000019 /* UpgradeCatalog.swift */,
+				F10000000000000000000020 /* GameSession.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		G10000000000000000000007 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000025 /* RootView.swift */,
+				F10000000000000000000026 /* DockMenuView.swift */,
+				F10000000000000000000027 /* ShopView.swift */,
+				F10000000000000000000028 /* ResultsView.swift */,
+				F10000000000000000000029 /* LastRippleView.swift */,
+				F10000000000000000000030 /* GameContainerView.swift */,
+				F10000000000000000000031 /* Color+Hex.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -237,6 +287,20 @@
 				B10000000000000000000009 /* GameScene.swift in Sources */,
 				B10000000000000000000010 /* GameState.swift in Sources */,
 				B10000000000000000000011 /* PlayerProgress.swift in Sources */,
+				B10000000000000000000015 /* Biome.swift in Sources */,
+				B10000000000000000000016 /* UpgradeCatalog.swift in Sources */,
+				B10000000000000000000017 /* GameSession.swift in Sources */,
+				B10000000000000000000018 /* PebbleNode.swift in Sources */,
+				B10000000000000000000019 /* PearlNode.swift in Sources */,
+				B10000000000000000000020 /* LogObstacle.swift in Sources */,
+				B10000000000000000000021 /* WorldSpawner.swift in Sources */,
+				B10000000000000000000022 /* RootView.swift in Sources */,
+				B10000000000000000000023 /* DockMenuView.swift in Sources */,
+				B10000000000000000000024 /* ShopView.swift in Sources */,
+				B10000000000000000000025 /* ResultsView.swift in Sources */,
+				B10000000000000000000026 /* LastRippleView.swift in Sources */,
+				B10000000000000000000027 /* GameContainerView.swift in Sources */,
+				B10000000000000000000028 /* Color+Hex.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

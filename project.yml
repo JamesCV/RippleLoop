@@ -1,6 +1,6 @@
-name: RippleLoop
+name: RippleRun
 options:
-  bundleIdPrefix: com.rippleloop
+  bundleIdPrefix: com.ripplerun
   deploymentTarget:
     iOS: "17.0"
   xcodeVersion: "16.0"

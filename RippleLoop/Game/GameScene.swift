@@ -1,40 +1,61 @@
 import SpriteKit
 
-protocol GameSceneDelegate: AnyObject {
-    func gameSceneDidRequestImpulse()
+protocol GameSceneHost: AnyObject {
+    func gameSceneDidRequestLastRipple(_ state: ContinueState)
+    func gameSceneDidFinish(_ summary: RunSummary)
 }
 
 final class GameScene: SKScene {
-    weak var gameDelegate: GameSceneDelegate?
+    weak var host: GameSceneHost?
 
     private var backgroundRoot = SKNode()
     private let worldNode = SKNode()
+    private let obstacleNode = SKNode()
     private let stoneNode = SKShapeNode(ellipseOf: CGSize(width: 28, height: 16))
+    private let pebble = PebbleNode()
     private let hud = HUDNode()
     private let aimOverlay = AimOverlay()
+    private var worldSpawner: WorldSpawner!
 
-    private var phase: RunPhase = .aiming
+    private var phase: RunPhase = .throwing
     private var stonePosition = CGPoint(x: GameConstants.launchX, y: GameConstants.waterSurfaceY + 18)
     private var stoneVelocity = CGVector.zero
     private var skipCount = 0
-    private var impulsesRemaining = 0
-    private var lastImpulseTime: TimeInterval = 0
     private var runStartX: CGFloat = 0
     private var distanceMeters: Double = 0
     private var isDraggingSlider = false
-    private var runSummary: RunSummary?
     private var lastUpdateTime: TimeInterval?
+    private var currentBiome: Biome = .goldenHour
+
+    private var comboMultiplier = 1
+    private var comboPeak = 1
+    private var lastSkipTime: TimeInterval = 0
+    private var pearlsCollected = 0
+
+    private var isHoldingBounce = false
+    private var doubleBouncesRemaining = 0
+    private var lastTapTime: TimeInterval = 0
+    private var inAirSegment = true
+    private var slowMoUntil: TimeInterval = 0
+
+    private var sinkStartedAt: TimeInterval?
+    private var hasOfferedContinue = false
+    private var continuesUsed = 0
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0, y: 0)
         backgroundColor = SKColor.hex(GameConstants.skyBottom)
         scaleMode = .resizeFill
 
-        backgroundRoot = ParallaxBackground.build(in: self)
+        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome)
         addChild(backgroundRoot)
 
         worldNode.position = .zero
         addChild(worldNode)
+
+        obstacleNode.zPosition = 10
+        worldNode.addChild(obstacleNode)
+        worldSpawner = WorldSpawner(container: obstacleNode)
 
         stoneNode.fillColor = SKColor(white: 0.82, alpha: 1)
         stoneNode.strokeColor = SKColor(white: 0.55, alpha: 0.8)
@@ -42,55 +63,54 @@ final class GameScene: SKScene {
         stoneNode.zPosition = 20
         worldNode.addChild(stoneNode)
 
+        pebble.playIdle(on: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY))
+        addChild(pebble)
+
         hud.position = CGPoint(x: 0, y: size.height)
         addChild(hud)
 
         aimOverlay.position = CGPoint(x: size.width, y: size.height)
         addChild(aimOverlay)
 
-        resetRun()
+        beginRun()
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
         hud.position = CGPoint(x: 0, y: size.height)
         aimOverlay.position = CGPoint(x: size.width, y: size.height)
-        backgroundRoot.removeFromParent()
-        backgroundRoot = ParallaxBackground.build(in: self)
-        insertChild(backgroundRoot, at: 0)
+    }
+
+    func beginRun() {
+        PlayerProgress.shared.resetRunState()
+        PlayerProgress.shared.grantFTUERipplesIfNeeded()
+        resetRun()
+        startThrowSequence()
+    }
+
+    func resumeFromContinue() {
+        phase = .flying
+        sinkStartedAt = nil
+        hasOfferedContinue = false
+        continuesUsed += 1
+        stoneVelocity = CGVector(dx: max(stoneVelocity.dx, 180), dy: 280)
+        stonePosition.y = max(stonePosition.y, GameConstants.waterSurfaceY + 40)
+        inAirSegment = true
+        doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+        let ripple = RippleEffect(at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY), strength: 1.2, twin: true)
+        worldNode.addChild(ripple)
+        hud.setHint("Hold to rise · Double-tap to bounce")
     }
 
     override func update(_ currentTime: TimeInterval) {
-        guard phase == .flying else {
+        switch phase {
+        case .flying:
+            updateFlying(currentTime: currentTime)
+        case .sinking:
+            updateSinking(currentTime: currentTime)
+        default:
             lastUpdateTime = currentTime
-            return
         }
-
-        let delta = currentTime - (lastUpdateTime ?? currentTime)
-        lastUpdateTime = currentTime
-        let deltaTime = CGFloat(min(max(delta, 0), 1.0 / 30.0))
-        guard deltaTime > 0 else { return }
-        StonePhysics.integrate(position: &stonePosition, velocity: &stoneVelocity, deltaTime: deltaTime)
-
-        if stonePosition.y <= GameConstants.waterSurfaceY && stoneVelocity.dy < 0 {
-            if StonePhysics.attemptSkip(velocity: &stoneVelocity, at: &stonePosition) {
-                skipCount += 1
-                let ripple = RippleEffect(
-                    at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
-                    strength: StonePhysics.speed(stoneVelocity) / 400
-                )
-                worldNode.addChild(ripple)
-            } else {
-                finishRun()
-            }
-        }
-
-        if stonePosition.y < -80 {
-            finishRun()
-        }
-
-        stoneNode.position = stonePosition
-        updateCamera()
         updateHUDValues()
     }
 
@@ -98,12 +118,8 @@ final class GameScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        if phase == .finished {
-            resetRun()
-            return
-        }
-
-        if phase == .aiming {
+        switch phase {
+        case .aiming:
             if aimOverlay.isAngleSliderTouch(location, in: size) {
                 isDraggingSlider = true
                 aimOverlay.updateAngleSlider(at: location, in: size)
@@ -111,8 +127,11 @@ final class GameScene: SKScene {
                 aimOverlay.resetSwipe()
                 aimOverlay.appendSwipePoint(convertToAimPoint(location))
             }
-        } else if phase == .flying {
-            useImpulse()
+        case .flying:
+            handleBounceInput(at: CACurrentMediaTime())
+            isHoldingBounce = true
+        default:
+            break
         }
     }
 
@@ -126,81 +145,264 @@ final class GameScene: SKScene {
         } else {
             aimOverlay.appendSwipePoint(convertToAimPoint(location))
         }
-        updateHUDValues()
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        isHoldingBounce = false
         guard phase == .aiming else { return }
         isDraggingSlider = false
         launchStone()
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        isHoldingBounce = false
         touchesEnded(touches, with: event)
     }
 
-    func useImpulseFromButton() {
-        useImpulse()
+    private func startThrowSequence() {
+        phase = .throwing
+        aimOverlay.isHidden = true
+        hud.setHint("Pebble prepares to throw…")
+        pebble.playIdle(on: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY))
+        pebble.playThrow(from: CGPoint(x: GameConstants.launchX - 8, y: GameConstants.dockY)) { [weak self] in
+            self?.enterAiming()
+        }
     }
 
-    private func resetRun() {
+    private func enterAiming() {
         phase = .aiming
-        stonePosition = CGPoint(x: GameConstants.launchX, y: GameConstants.waterSurfaceY + 18)
-        stoneVelocity = .zero
-        skipCount = 0
-        impulsesRemaining = PlayerProgress.shared.maxImpulses
-        runStartX = stonePosition.x
-        distanceMeters = 0
-        runSummary = nil
-
-        worldNode.position = .zero
-        stoneNode.position = stonePosition
-        aimOverlay.resetSwipe()
-        hud.hideResult()
-        hud.setHint("Swipe to aim and throw")
-        updateHUDValues()
+        aimOverlay.isHidden = false
+        hud.setHint("Swipe to aim · Pebble throws")
     }
 
     private func launchStone() {
         phase = .flying
+        inAirSegment = true
+        doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
         stoneVelocity = StonePhysics.launchVelocity(
             power: aimOverlay.swipePower,
-            angleRadians: aimOverlay.launchAngle
+            angleRadians: aimOverlay.launchAngle,
+            powerBonus: PlayerProgress.shared.launchPowerBonus
         )
         stoneNode.position = stonePosition
-        hud.setHint("Tap for IMPULSE boost")
+        aimOverlay.isHidden = true
+        pebble.showSpirit(at: CGPoint(x: GameConstants.launchX, y: GameConstants.dockY + 20))
+        hud.setHint("Hold to rise · Double-tap to bounce")
         aimOverlay.resetSwipe()
     }
 
-    private func useImpulse() {
+    private func handleBounceInput(at time: TimeInterval) {
         guard phase == .flying else { return }
-        guard impulsesRemaining > 0 else { return }
-        guard CACurrentMediaTime() - lastImpulseTime >= GameConstants.impulseCooldown else { return }
 
-        impulsesRemaining -= 1
-        lastImpulseTime = CACurrentMediaTime()
-        StonePhysics.applyImpulse(velocity: &stoneVelocity)
-        gameDelegate?.gameSceneDidRequestImpulse()
-        updateHUDValues()
+        if time - lastTapTime <= GameConstants.doubleBounceWindow, doubleBouncesRemaining > 0 {
+            doubleBouncesRemaining -= 1
+            StonePhysics.applyDoubleBounce(velocity: &stoneVelocity)
+            slowMoUntil = time + GameConstants.slowMoDuration
+            let ripple = RippleEffect(
+                at: CGPoint(x: stonePosition.x, y: stonePosition.y),
+                strength: 1.0,
+                twin: true
+            )
+            worldNode.addChild(ripple)
+            hud.flashCombo()
+        } else {
+            StonePhysics.applyBounce(velocity: &stoneVelocity, holding: false)
+            let ripple = RippleEffect(
+                at: CGPoint(x: stonePosition.x, y: stonePosition.y - 8),
+                strength: 0.6
+            )
+            worldNode.addChild(ripple)
+        }
+        lastTapTime = time
+        updateBounceHUD()
+    }
+
+    private func updateFlying(currentTime: TimeInterval) {
+        let delta = currentTime - (lastUpdateTime ?? currentTime)
+        lastUpdateTime = currentTime
+        var deltaTime = CGFloat(min(max(delta, 0), 1.0 / 30.0))
+        if currentTime < slowMoUntil {
+            deltaTime *= GameConstants.slowMoFactor
+        }
+        guard deltaTime > 0 else { return }
+
+        if isHoldingBounce {
+            StonePhysics.applyBounce(velocity: &stoneVelocity, holding: true)
+        }
+
+        let gravityMultiplier = PlayerProgress.shared.bounceFloatFactor
+        StonePhysics.integrate(
+            position: &stonePosition,
+            velocity: &stoneVelocity,
+            deltaTime: deltaTime,
+            gravityMultiplier: gravityMultiplier
+        )
+
+        if worldSpawner.checkLogCollision(stonePosition: stonePosition, stoneRadius: 14) {
+            beginSinking(at: currentTime, reason: .obstacle)
+            return
+        }
+
+        let magnet = PlayerProgress.shared.pearlMagnetRadius
+        pearlsCollected += worldSpawner.collectPearls(near: stonePosition, magnetRadius: magnet)
+
+        if stonePosition.y <= GameConstants.waterSurfaceY && stoneVelocity.dy < 0 {
+            inAirSegment = false
+            if StonePhysics.attemptSkip(
+                velocity: &stoneVelocity,
+                at: &stonePosition,
+                angleBonus: PlayerProgress.shared.skipAngleBonus
+            ) {
+                skipCount += 1
+                registerSkip(at: currentTime)
+                inAirSegment = true
+                doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+                let ripple = RippleEffect(
+                    at: CGPoint(x: stonePosition.x, y: GameConstants.waterSurfaceY),
+                    strength: StonePhysics.speed(stoneVelocity) / 400
+                )
+                worldNode.addChild(ripple)
+            } else {
+                beginSinking(at: currentTime, reason: .failedSkip)
+            }
+        }
+
+        if stonePosition.y < -80 {
+            beginSinking(at: currentTime, reason: .outOfBounds)
+        }
+
+        stoneNode.position = stonePosition
+        updateCamera()
+        updateBiomeIfNeeded()
+        worldSpawner.update(stoneX: stonePosition.x, distanceMeters: distanceMeters)
+        updateBounceHUD()
+    }
+
+    private enum SinkReason {
+        case failedSkip, obstacle, outOfBounds
+    }
+
+    private func beginSinking(at time: TimeInterval, reason: SinkReason) {
+        guard phase == .flying else { return }
+        phase = .sinking
+        sinkStartedAt = time
+        stoneVelocity = CGVector(dx: stoneVelocity.dx * 0.3, dy: -60)
+        hud.setHint("")
+        _ = reason
+    }
+
+    private func updateSinking(currentTime: TimeInterval) {
+        guard let started = sinkStartedAt else { return }
+        let delta = currentTime - (lastUpdateTime ?? currentTime)
+        lastUpdateTime = currentTime
+        let deltaTime = CGFloat(min(max(delta, 0), 1.0 / 30.0))
+
+        stoneVelocity.dy -= 120 * deltaTime
+        stonePosition.x += stoneVelocity.dx * deltaTime
+        stonePosition.y += stoneVelocity.dy * deltaTime
+        stoneNode.position = stonePosition
+        stoneNode.alpha = max(0.2, 1 - CGFloat(currentTime - started) / 1.4)
+        updateCamera()
+
+        if currentTime - started >= GameConstants.sinkDuration {
+            offerContinueOrFinish()
+        }
+    }
+
+    private func offerContinueOrFinish() {
+        guard phase == .sinking else { return }
+
+        let progress = PlayerProgress.shared
+        let canWatchAd = !progress.adContinueUsedThisRun
+        let canSpendPebbles = progress.pebbles >= progress.continuePebbleCost
+        let canFree = progress.canUseDailyFreeContinue && continuesUsed == 0
+
+        if !hasOfferedContinue && (canWatchAd || canSpendPebbles || canFree) {
+            hasOfferedContinue = true
+            phase = .finished
+            let state = ContinueState(
+                distanceMeters: distanceMeters,
+                skipCount: skipCount,
+                comboMultiplier: comboMultiplier,
+                pearlsCollected: pearlsCollected,
+                canWatchAd: canWatchAd,
+                canSpendPebbles: canSpendPebbles,
+                pebbleCost: progress.continuePebbleCost
+            )
+            host?.gameSceneDidRequestLastRipple(state)
+        } else {
+            finishRun()
+        }
     }
 
     private func finishRun() {
-        guard phase != .finished else { return }
         phase = .finished
         stoneVelocity = .zero
 
-        distanceMeters = Double(stonePosition.x - runStartX) * Double(GameConstants.metersPerPoint)
-        var summary = PlayerProgress.shared.recordRun(distanceMeters: distanceMeters)
-        summary = RunSummary(
-            distanceMeters: summary.distanceMeters,
+        distanceMeters = max(0, Double(stonePosition.x - runStartX) * Double(GameConstants.metersPerPoint))
+        let summary = PlayerProgress.shared.recordRun(
+            distanceMeters: distanceMeters,
             skipCount: skipCount,
-            bestDistanceMeters: summary.bestDistanceMeters,
-            isNewBest: summary.isNewBest
+            pearlsCollected: pearlsCollected,
+            comboPeak: comboPeak,
+            biome: currentBiome
         )
-        runSummary = summary
-        hud.showResult(summary, skipCount: skipCount)
-        hud.setHint("")
-        updateHUDValues()
+        host?.gameSceneDidFinish(summary)
+    }
+
+    private func registerSkip(at time: TimeInterval) {
+        if time - lastSkipTime <= GameConstants.comboWindowSeconds {
+            comboMultiplier = min(comboMultiplier + 1, 10)
+        } else {
+            comboMultiplier = 1
+        }
+        comboPeak = max(comboPeak, comboMultiplier)
+        lastSkipTime = time
+        hud.updateCombo(comboMultiplier)
+        hud.flashCombo()
+    }
+
+    private func updateBiomeIfNeeded() {
+        let biome = Biome.forDistance(distanceMeters)
+        guard biome != currentBiome else { return }
+        currentBiome = biome
+        ParallaxBackground.applyBiome(biome, to: backgroundRoot, sceneSize: size)
+        backgroundColor = SKColor.hex(biome.skyBottom)
+        hud.updateBiome(biome.displayName)
+    }
+
+    private func resetRun() {
+        phase = .throwing
+        stonePosition = CGPoint(x: GameConstants.launchX, y: GameConstants.waterSurfaceY + 18)
+        stoneVelocity = .zero
+        skipCount = 0
+        runStartX = stonePosition.x
+        distanceMeters = 0
+        comboMultiplier = 1
+        comboPeak = 1
+        pearlsCollected = 0
+        currentBiome = .goldenHour
+        hasOfferedContinue = false
+        continuesUsed = 0
+        sinkStartedAt = nil
+        stoneNode.alpha = 1
+        inAirSegment = true
+        doubleBouncesRemaining = PlayerProgress.shared.doubleBouncesPerSegment
+
+        worldNode.position = .zero
+        obstacleNode.removeAllChildren()
+        worldSpawner.reset()
+        backgroundRoot.removeFromParent()
+        backgroundRoot = ParallaxBackground.build(in: self, biome: currentBiome)
+        insertChild(backgroundRoot, at: 0)
+
+        stoneNode.position = stonePosition
+        aimOverlay.resetSwipe()
+        aimOverlay.isHidden = true
+        hud.updateCombo(1)
+        hud.updatePearls(0)
+        hud.updateBiome(currentBiome.displayName)
+        updateBounceHUD()
     }
 
     private func updateCamera() {
@@ -222,7 +424,11 @@ final class GameScene: SKScene {
         let speed = StonePhysics.speed(stoneVelocity) * GameConstants.metersPerPoint * 60
         let power = phase == .aiming ? aimOverlay.swipePower : min(StonePhysics.speed(stoneVelocity) / 700, 1)
         hud.updateSpeed(Double(speed), normalizedPower: power)
-        hud.updateImpulse(remaining: impulsesRemaining, maxImpulses: PlayerProgress.shared.maxImpulses)
+        hud.updatePearls(pearlsCollected)
+    }
+
+    private func updateBounceHUD() {
+        hud.updateBounces(remaining: doubleBouncesRemaining, max: PlayerProgress.shared.doubleBouncesPerSegment)
     }
 
     private func convertToAimPoint(_ location: CGPoint) -> CGPoint {

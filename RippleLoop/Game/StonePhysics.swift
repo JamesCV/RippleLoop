@@ -5,9 +5,9 @@ enum StonePhysics {
         hypot(velocity.dx, velocity.dy)
     }
 
-    static func launchVelocity(power: CGFloat, angleRadians: CGFloat) -> CGVector {
+    static func launchVelocity(power: CGFloat, angleRadians: CGFloat, powerBonus: CGFloat = 0) -> CGVector {
         let clampedPower = min(max(power, 0.15), 1.0)
-        let launchSpeed = 280 + clampedPower * 520
+        let launchSpeed = (280 + clampedPower * 520) * (1 + powerBonus)
         return CGVector(
             dx: cos(angleRadians) * launchSpeed,
             dy: sin(angleRadians) * launchSpeed
@@ -17,9 +17,10 @@ enum StonePhysics {
     static func integrate(
         position: inout CGPoint,
         velocity: inout CGVector,
-        deltaTime: CGFloat
+        deltaTime: CGFloat,
+        gravityMultiplier: CGFloat = 1
     ) {
-        velocity.dy -= GameConstants.gravity * deltaTime
+        velocity.dy -= GameConstants.gravity * gravityMultiplier * deltaTime
         velocity.dx *= GameConstants.airDrag
         velocity.dy *= GameConstants.airDrag
 
@@ -29,13 +30,14 @@ enum StonePhysics {
 
     static func attemptSkip(
         velocity: inout CGVector,
-        at position: inout CGPoint
+        at position: inout CGPoint,
+        angleBonus: CGFloat = 0
     ) -> Bool {
         let currentSpeed = speed(velocity)
         guard currentSpeed >= GameConstants.minSkipSpeed else { return false }
 
         let entryAngle = atan2(abs(velocity.dy), max(abs(velocity.dx), 0.001))
-        guard entryAngle <= GameConstants.maxSkipEntryAngle else { return false }
+        guard entryAngle <= GameConstants.maxSkipEntryAngle + angleBonus else { return false }
 
         velocity.dy = abs(velocity.dy) * GameConstants.skipVerticalBoost
         velocity.dx *= GameConstants.skipHorizontalRetention
@@ -43,15 +45,14 @@ enum StonePhysics {
         return true
     }
 
-    static func applyImpulse(velocity: inout CGVector) {
-        let currentSpeed = speed(velocity)
-        guard currentSpeed > 40 else { return }
+    static func applyBounce(velocity: inout CGVector, holding: Bool) {
+        let lift = GameConstants.bounceLiftForce * (holding ? GameConstants.bounceHoldMultiplier : 1)
+        velocity.dy = max(velocity.dy, 0) + lift
+        velocity.dx += 18
+    }
 
-        let direction = CGVector(
-            dx: velocity.dx / currentSpeed,
-            dy: velocity.dy / currentSpeed
-        )
-        let boosted = currentSpeed + GameConstants.impulseBoostSpeed
-        velocity = CGVector(dx: direction.dx * boosted, dy: direction.dy * boosted)
+    static func applyDoubleBounce(velocity: inout CGVector) {
+        velocity.dy = max(velocity.dy, 0) + GameConstants.doubleBounceForce
+        velocity.dx += 36
     }
 }

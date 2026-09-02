@@ -3,23 +3,24 @@ import SpriteKit
 final class HUDNode: SKNode {
     private let distanceLabel = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
     private let speedLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
-    private let impulseLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let comboLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let pearlLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
+    private let biomeLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
     private let hintLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
     private let powerBarBackground = SKShapeNode(rectOf: CGSize(width: 14, height: 180), cornerRadius: 7)
     private let powerBarFill = SKShapeNode(rectOf: CGSize(width: 10, height: 4), cornerRadius: 3)
-    private let resultPanel = SKNode()
-    private let resultTitle = SKLabelNode(fontNamed: "AvenirNext-Bold")
-    private let resultDetail = SKLabelNode(fontNamed: "AvenirNext-Medium")
-    private let retryLabel = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
+    private let bounceLabel = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
 
     override init() {
         super.init()
         zPosition = 200
         setupDistance()
         setupPowerBar()
-        setupImpulse()
+        setupCombo()
+        setupPearls()
+        setupBiome()
         setupHint()
-        setupResultPanel()
+        setupBounceIndicator()
     }
 
     @available(*, unavailable)
@@ -28,11 +29,11 @@ final class HUDNode: SKNode {
     }
 
     func updateDistance(_ meters: Double) {
-        distanceLabel.text = String(format: "%.1f m", meters)
+        distanceLabel.text = String(format: "%.0f m", meters)
     }
 
     func updateSpeed(_ metersPerSecond: Double, normalizedPower: CGFloat) {
-        speedLabel.text = String(format: "%.1f m/s", metersPerSecond)
+        speedLabel.text = String(format: "%.0f m/s", metersPerSecond)
         let clamped = min(max(normalizedPower, 0), 1)
         let height = 160 * clamped + 8
         powerBarFill.path = CGPath(
@@ -43,28 +44,37 @@ final class HUDNode: SKNode {
         )
     }
 
-    func updateImpulse(remaining: Int, maxImpulses: Int) {
-        impulseLabel.text = "IMPULSE \(remaining)"
-        impulseLabel.alpha = remaining > 0 ? 1 : 0.45
+    func updateCombo(_ multiplier: Int) {
+        if multiplier <= 1 {
+            comboLabel.text = ""
+        } else {
+            comboLabel.text = "×\(multiplier)"
+            comboLabel.alpha = min(1, 0.6 + CGFloat(multiplier) * 0.08)
+        }
+    }
+
+    func updatePearls(_ count: Int) {
+        pearlLabel.text = "◦ \(count)"
+    }
+
+    func updateBiome(_ name: String) {
+        biomeLabel.text = name
+    }
+
+    func updateBounces(remaining: Int, max: Int) {
+        bounceLabel.text = remaining > 0 ? "bounce \(remaining)" : ""
+        bounceLabel.alpha = remaining > 0 ? 1 : 0.35
     }
 
     func setHint(_ text: String) {
         hintLabel.text = text
     }
 
-    func showResult(_ summary: RunSummary, skipCount: Int) {
-        resultPanel.isHidden = false
-        resultTitle.text = summary.isNewBest ? "New Best!" : "Run Complete"
-        resultDetail.text = String(
-            format: "%.1f m  •  %d skips  •  best %.1f m",
-            summary.distanceMeters,
-            skipCount,
-            summary.bestDistanceMeters
-        )
-    }
-
-    func hideResult() {
-        resultPanel.isHidden = true
+    func flashCombo() {
+        comboLabel.run(SKAction.sequence([
+            SKAction.scale(to: 1.25, duration: 0.08),
+            SKAction.scale(to: 1.0, duration: 0.12)
+        ]))
     }
 
     private func setupDistance() {
@@ -95,50 +105,44 @@ final class HUDNode: SKNode {
         addChild(speedLabel)
     }
 
-    private func setupImpulse() {
-        impulseLabel.fontSize = 15
-        impulseLabel.fontColor = SKColor.white.withAlphaComponent(0.92)
-        impulseLabel.horizontalAlignmentMode = .right
-        impulseLabel.verticalAlignmentMode = .top
-        impulseLabel.position = CGPoint(x: -24, y: -24)
-        addChild(impulseLabel)
+    private func setupCombo() {
+        comboLabel.fontSize = 34
+        comboLabel.fontColor = SKColor.hex("#FFD878")
+        comboLabel.horizontalAlignmentMode = .center
+        comboLabel.position = CGPoint(x: 195, y: -80)
+        addChild(comboLabel)
+    }
+
+    private func setupPearls() {
+        pearlLabel.fontSize = 18
+        pearlLabel.fontColor = SKColor.hex("#E8F4FF")
+        pearlLabel.horizontalAlignmentMode = .right
+        pearlLabel.position = CGPoint(x: -24, y: -56)
+        addChild(pearlLabel)
+    }
+
+    private func setupBiome() {
+        biomeLabel.fontSize = 13
+        biomeLabel.fontColor = SKColor.white.withAlphaComponent(0.55)
+        biomeLabel.horizontalAlignmentMode = .left
+        biomeLabel.position = CGPoint(x: 24, y: -56)
+        addChild(biomeLabel)
     }
 
     private func setupHint() {
         hintLabel.fontSize = 15
         hintLabel.fontColor = SKColor.white.withAlphaComponent(0.75)
-        hintLabel.horizontalAlignmentMode = .left
-        hintLabel.position = CGPoint(x: 24, y: -760)
-        hintLabel.text = "Swipe to aim and throw"
+        hintLabel.horizontalAlignmentMode = .center
+        hintLabel.position = CGPoint(x: 195, y: -760)
+        hintLabel.text = "Hold to rise · Double-tap to bounce"
         addChild(hintLabel)
     }
 
-    private func setupResultPanel() {
-        resultPanel.isHidden = true
-
-        let backdrop = SKShapeNode(rectOf: CGSize(width: 320, height: 180), cornerRadius: 18)
-        backdrop.fillColor = SKColor.black.withAlphaComponent(0.45)
-        backdrop.strokeColor = SKColor.white.withAlphaComponent(0.25)
-        backdrop.lineWidth = 1
-        backdrop.position = CGPoint(x: 0, y: -360)
-        resultPanel.addChild(backdrop)
-
-        resultTitle.fontSize = 28
-        resultTitle.fontColor = .white
-        resultTitle.position = CGPoint(x: 0, y: -320)
-        resultPanel.addChild(resultTitle)
-
-        resultDetail.fontSize = 17
-        resultDetail.fontColor = SKColor.white.withAlphaComponent(0.9)
-        resultDetail.position = CGPoint(x: 0, y: -360)
-        resultPanel.addChild(resultDetail)
-
-        retryLabel.fontSize = 18
-        retryLabel.fontColor = SKColor.hex("#9BE7A8")
-        retryLabel.text = "Tap to skip again"
-        retryLabel.position = CGPoint(x: 0, y: -410)
-        resultPanel.addChild(retryLabel)
-
-        addChild(resultPanel)
+    private func setupBounceIndicator() {
+        bounceLabel.fontSize = 13
+        bounceLabel.fontColor = SKColor.hex("#9BE7A8")
+        bounceLabel.horizontalAlignmentMode = .right
+        bounceLabel.position = CGPoint(x: -24, y: -24)
+        addChild(bounceLabel)
     }
 }
